@@ -16,7 +16,7 @@ import cv2
 
 # 1000 time steps
 total_state=1000;
-# 5 features on the state [mass,x,y,x_vel,y_vel]
+# 7 features on the state [mass,x,y,x_vel,y_vel]
 fea_num=5;
 # G 
 #G = 6.67428e-11;
@@ -38,8 +38,6 @@ def init(total_state,n_body,fea_num,orbit):
       data[0][i][2]=distance*sin(theta_rad);
       data[0][i][3]=-1*data[0][i][2]/norm(data[0][i][1:3])*(G*data[0][0][0]/norm(data[0][i][1:3])**2)*distance/1000;
       data[0][i][4]=data[0][i][1]/norm(data[0][i][1:3])*(G*data[0][0][0]/norm(data[0][i][1:3])**2)*distance/1000;
-      #data[0][i][3]=np.random.rand()*10.0-5.0;
-      #data[0][i][4]=np.random.rand()*10.0-5.0;
   else:
     for i in range(n_body):
       data[0][i][0]=np.random.rand()*8.98+0.02;
@@ -85,7 +83,6 @@ def gen(n_body,orbit):
   return data;
 
 def make_video(xy,filename):
-  os.system("rm -rf pics/*");
   FFMpegWriter = manimation.writers['ffmpeg']
   metadata = dict(title='Movie Test', artist='Matplotlib',
                   comment='Movie support!')
@@ -101,7 +98,23 @@ def make_video(xy,filename):
         plt.plot(xy[i,j,1],xy[i,j,0],color[j%len(color)]);
       writer.grab_frame();
 
+def make_image(xy,prefix):
+  fig_num=len(xy);
+  for i in range(fig_num):
+    fig = plt.figure()
+    plt.xlim(-200, 200)
+    plt.ylim(-200, 200)
+    color=['r','b','g','k','y','m','c'];
+    for j in range(len(xy[0])):
+      plt.scatter(xy[i,j,1],xy[i,j,0],c=color[j%len(color)],s=400);
+    fig.savefig(prefix+str(i)+".png");
+
 if __name__=='__main__':
-  data=gen(3,True);
+  parser = argparse.ArgumentParser()
+  parser.add_argument('--prefix', type=int, default=1,
+                      help='prefix for image')
+  FLAGS, unparsed = parser.parse_known_args()
+  data=gen(2,True);
   xy=data[:,:,1:3];
-  make_video(xy,"test.mp4");
+  #make_video(xy,"test.mp4");
+  make_image(xy,"train_img/"+str(FLAGS.prefix)+"_");
