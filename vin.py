@@ -28,7 +28,7 @@ def maxpool2d(x, k=2):
   return tf.nn.max_pool(x, ksize=[1, k, k, 1], strides=[1, k, k, 1],
                           padding='SAME')
 
-def IPE(F1F2,F2F3,F3F4,F4F5,F5F6,FLAGS):
+def IPE(F1F2,F2F3,F3F4,F4F5,F5F6,x_cor,y_cor,FLAGS):
   img_pair=tf.concat([F1F2,F2F3,F3F4,F4F5,F5F6],0);
   # First 2 layer conv (kernel size 10 and 4 channels)
   w_1_1,b_1_1=conv_variable([10,10,8,4]);
@@ -47,9 +47,7 @@ def IPE(F1F2,F2F3,F3F4,F4F5,F5F6,FLAGS):
   h_3_1=tf.nn.relu(conv2d(en_pair,w_3_1,1)+b_3_1);
   h_3_2=tf.nn.relu(conv2d(h_3_1,w_3_2,1)+b_3_2);
   # Inject x and y coordinate channels
-  x=tf.placeholder(tf.float32, [None,FLAGS.height,FLAGS.weight,1], name="x-cor");
-  y=tf.placeholder(tf.float32, [None,FLAGS.height,FLAGS.weight,1], name="y-cor");
-  h_3_2_x_y=tf.concat([h_3_2,x,y],3);
+  h_3_2_x_y=tf.concat([h_3_2,x_cor,y_cor],3);
   # Fourth conv and max-pooling layers to unit height and width
   w_4_1,b_4_1=conv_variable([3,3,18,16]);
   h_4_1=tf.nn.relu(conv2d(h_3_2_x_y,w_4_1,1)+b_4_1);
@@ -74,13 +72,13 @@ def IPE(F1F2,F2F3,F3F4,F4F5,F5F6,FLAGS):
   pair5=tf.slice(res_pair,[FLAGS.batch_num*4,0],[FLAGS.batch_num,-1]);
   return pair1,pair2,pair3,pair4,pair5;
 
-def VE(F1,F2,F3,F4,F5,F6,FLAGS):
+def VE(F1,F2,F3,F4,F5,F6,x_cor,y_cor,FLAGS):
   F1F2=tf.concat([F1,F2],3);
   F2F3=tf.concat([F2,F3],3);
   F3F4=tf.concat([F3,F4],3);
   F4F5=tf.concat([F4,F5],3);
   F5F6=tf.concat([F5,F6],3);
-  pair1,pair2,pair3,pair4,pair5=IPE(F1F2,F2F3,F3F4,F4F5,F5F6,FLAGS);
+  pair1,pair2,pair3,pair4,pair5=IPE(F1F2,F2F3,F3F4,F4F5,F5F6,x_cor,y_cor,FLAGS);
   concated_pair=tf.concat([pair1,pair2,pair3,pair4,pair5],0);
   # shared a linear layer
   w0 = tf.Variable(tf.truncated_normal([32, FLAGS.No*64], stddev=0.1), dtype=tf.float32)
