@@ -11,7 +11,7 @@ import matplotlib.image as mpimg
 import numpy as np
 import time
 from physics_engine import gen, make_video
-from vin import VE, DP
+from vin import VE, DP, SD
 
 FLAGS = None
 
@@ -36,8 +36,25 @@ def train():
   F4=tf.placeholder(tf.float32, [None,height,weight,col_dim], name="F4");
   F5=tf.placeholder(tf.float32, [None,height,weight,col_dim], name="F5");
   F6=tf.placeholder(tf.float32, [None,height,weight,col_dim], name="F6");
+  label=tf.placeholder(tf.float32, [None,FLAGS.No,4], name="label");
   S1,S2,S3,S4=VE(F1,F2,F3,F4,F5,F6,FLAGS);
   out_dp=DP(S1,S2,S3,S4,FLAGS);
+  out_sd=SD(out_dp,FLAGS);
+
+  # loss and optimizer
+  mse=tf.reduce_mean(tf.reduce_mean(tf.square(out_sd-label),[1,2]));
+  optimizer = tf.train.AdamOptimizer(0.001);
+  trainer=optimizer.minimize(mse);
+
+  # tensorboard
+  tf.summary.scalar('mse',mse);
+  merged=tf.summary.merge_all();
+  writer=tf.summary.FileWriter(FLAGS.log_dir);
+
+  sess=tf.InteractiveSession();
+  tf.global_variables_initializer().run();
+
+  exit(1);    
   #y=np.array(range(FLAGS.height),dtype=float)/(FLAGS.height-1);
   #x=np.array(range(FLAGS.weight),dtype=float)/(FLAGS.weight-1);
   #nx, ny = (FLAGS.weight, FLAGS.height);

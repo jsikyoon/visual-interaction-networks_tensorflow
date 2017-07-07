@@ -193,3 +193,11 @@ def DP(S1,S2,S3,S4,FLAGS):
   h2=tf.reshape(h2,[-1,FLAGS.No,64]);
   return h2;
 
+def SD(output_dp,FLAGS):
+  # State Decoder
+  input_sd=tf.reshape(output_dp,[-1,64]);
+  w1 = tf.Variable(tf.truncated_normal([64, 4], stddev=0.1), dtype=tf.float32);
+  b1 = tf.Variable(tf.zeros([4]), dtype=tf.float32);
+  h1 = tf.nn.relu(tf.matmul(input_sd, w1) + b1);
+  h1=tf.reshape(h1,[-1,FLAGS.No,4]);
+  return h1;
