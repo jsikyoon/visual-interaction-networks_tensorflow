@@ -11,6 +11,7 @@ import matplotlib.image as mpimg
 import numpy as np
 import time
 from vin import VE, DP, SD
+from physics_engine import make_video
 from constants import No,img_folder,data_folder
 
 FLAGS = None
@@ -57,10 +58,10 @@ def train():
   total_img=np.zeros((FLAGS.set_num,1000,FLAGS.height,FLAGS.weight,FLAGS.col_dim),dtype=float);
   for i in range(FLAGS.set_num):
     for j in range(1000):
-      total_img[i,j]=mpimg.imread(FLAGS.img_folder+"train/"+str(i)+'_'+str(j)+'.png');
+      total_img[i,j]=mpimg.imread(img_folder+"train/"+str(i)+'_'+str(j)+'.png');
   total_data=np.zeros((FLAGS.set_num,1000,FLAGS.No*5),dtype=float);
   for i in range(FLAGS.set_num):
-    f=open(FLAGS.data_folder+"train/"+str(i)+".csv","r");
+    f=open(data_folder+"train/"+str(i)+".csv","r");
     total_data[i]=[line[:-1].split(",") for line in f.readlines()];
 
   # reshape img and data
@@ -118,10 +119,10 @@ def train():
   ts_img=np.zeros((1,1000,FLAGS.height,FLAGS.weight,FLAGS.col_dim),dtype=float);
   for i in range(1):
     for j in range(1000):
-      ts_img[i]=mpimg.imread(FLAGS.img_folder+"test/"+str(i)+"_"+str(j)+'.png');
-  ts_data=np.zeros((FLAGS.set_num,1000,FLAGS.No*5),dtype=float);
-  for i in range(FLAGS.set_num):
-    f=open(FLAGS.data_folder+"test/"+str(i)+".csv","r");
+      ts_img[i]=mpimg.imread(img_folder+"test/"+str(i)+"_"+str(j)+'.png');
+  ts_data=np.zeros((1,1000,FLAGS.No*5),dtype=float);
+  for i in range(1):
+    f=open(data_folder+"test/"+str(i)+".csv","r");
     ts_data[i]=[line[:-1].split(",") for line in f.readlines()];
 
   # reshape img and data
@@ -135,8 +136,12 @@ def train():
   xy_origin=output_label[:,:,0:2];
   xy_estimated=np.zeros((1*(1000-7+1),No,2),dtype=float);
   for i in range(len(input_img)):
-    output=sess.run(label,feed_dict={F:input_img[i],x_cor:xcor[0:4],y_cor:ycor[0:4]});
-    print(output);exit(1);
+    xy_estimated[i]=sess.run(label,feed_dict={F:[input_img[i]],label:[output_label[i]],x_cor:xcor[0:4],y_cor:ycor[0:4]})[:,:,1:3];
+  print("Video Recording");
+  make_video(xy_origin[:ts_frame_num],"true"+str(time.time())+".mp4");
+  make_video(xy_estimated[:ts_frame_num],"modeling"+str(time.time())+".mp4");
+  print("Done");
+
 
 def main(_):
   FLAGS.log_dir+=str(int(time.time()));
@@ -157,7 +162,7 @@ if __name__ == '__main__':
                       help='the number of training sets')
   parser.add_argument('--batch_num', type=int, default=4,
                       help='The number of data on each mini batch')
-  parser.add_argument('--max_epoches', type=int, default=1,
+  parser.add_argument('--max_epoches', type=int, default=50*10000,
                       help='Maximum limitation of epoches')
 
   FLAGS, unparsed = parser.parse_known_args()
