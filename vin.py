@@ -113,8 +113,8 @@ def core(S1,S3,S4,FLAGS):
   S=tf.concat([S1,S3,S4],0);
   M=tf.unstack(S,FLAGS.No,1);
   # Self-Dynamics MLP
-  SD_in=tf.reshape(S,[-1,64]);
-  w1_sd = tf.Variable(tf.truncated_normal([64, 64], stddev=0.1), dtype=tf.float32);
+  SD_in=tf.reshape(S,[-1,FLAGS.Ds]);
+  w1_sd = tf.Variable(tf.truncated_normal([FLAGS.Ds, 64], stddev=0.1), dtype=tf.float32);
   b1_sd = tf.Variable(tf.zeros([64]), dtype=tf.float32);
   h1_sd = tf.nn.relu(tf.matmul(SD_in, w1_sd) + b1_sd);
   w2_sd = tf.Variable(tf.truncated_normal([64, 64], stddev=0.1), dtype=tf.float32);
@@ -129,7 +129,7 @@ def core(S1,S3,S4,FLAGS):
     col_idx=int(i%FLAGS.No);
     rel_in[i]=tf.concat([M[row_idx],M[col_idx]],1);
   rel_in=tf.concat(list(rel_in),0);
-  w1_rel = tf.Variable(tf.truncated_normal([128, 64], stddev=0.1), dtype=tf.float32);
+  w1_rel = tf.Variable(tf.truncated_normal([FLAGS.Ds*2, 64], stddev=0.1), dtype=tf.float32);
   b1_rel = tf.Variable(tf.zeros([64]), dtype=tf.float32);
   h1_rel = tf.nn.relu(tf.matmul(rel_in, w1_rel) + b1_rel);
   w2_rel = tf.Variable(tf.truncated_normal([64, 64], stddev=0.1), dtype=tf.float32);
@@ -161,14 +161,14 @@ def core(S1,S3,S4,FLAGS):
   w3_aff = tf.Variable(tf.truncated_normal([64, 64], stddev=0.1), dtype=tf.float32);
   b3_aff = tf.Variable(tf.zeros([64]), dtype=tf.float32);
   h3_aff = tf.matmul(h2_aff, w3_aff) + b3_aff;
-  M_affect = tf.reshape(h2_sd,[-1,FLAGS.No,64]);
+  M_affect = tf.reshape(h3_aff,[-1,FLAGS.No,64]);
   # Output MLP
-  M_i_M_affect = tf.concat([S,M_self],2);
-  out_in=tf.reshape(M_i_M_affect,[-1,128]);
-  w1_out = tf.Variable(tf.truncated_normal([128, 32], stddev=0.1), dtype=tf.float32);
-  b1_out = tf.Variable(tf.zeros([32]), dtype=tf.float32);
+  M_i_M_affect = tf.concat([S,M_affect],2);
+  out_in=tf.reshape(M_i_M_affect,[-1,FLAGS.Ds+64]);
+  w1_out = tf.Variable(tf.truncated_normal([FLAGS.Ds+64, 64], stddev=0.1), dtype=tf.float32);
+  b1_out = tf.Variable(tf.zeros([64]), dtype=tf.float32);
   h1_out = tf.nn.relu(tf.matmul(out_in, w1_out) + b1_out);
-  w2_out = tf.Variable(tf.truncated_normal([32, 64], stddev=0.1), dtype=tf.float32);
+  w2_out = tf.Variable(tf.truncated_normal([64, 64], stddev=0.1), dtype=tf.float32);
   b2_out = tf.Variable(tf.zeros([64]), dtype=tf.float32);
   h2_out = tf.matmul(h1_out, w2_out) + b2_out;
   h2_out = tf.reshape(h2_out,[-1,FLAGS.No,64]);
