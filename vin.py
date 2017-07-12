@@ -30,41 +30,64 @@ def maxpool2d(x, k=2):
 
 def IPE(F1F2,F2F3,F3F4,F4F5,F5F6,x_cor,y_cor,FLAGS):
   img_pair=tf.concat([F1F2,F2F3,F3F4,F4F5,F5F6],0);
+  """
   # First 2 layer conv (kernel size 10 and 4 channels)
-  w_1_1,b_1_1=conv_variable([10,10,8,4]);
-  w_1_2,b_1_2=conv_variable([10,10,4,4]);
+  w_1_1,b_1_1=conv_variable([10,10,6,4]);
   h_1_1=tf.nn.relu(conv2d(img_pair,w_1_1,1)+b_1_1);
-  h_1_2=tf.nn.relu(conv2d(h_1_1,w_1_2,1)+b_1_2);
+  w_1_2,b_1_2=conv_variable([10,10,4,4]);
+  h_1_2=tf.nn.relu(conv2d(h_1_1,w_1_2,1)+b_1_2+h_1_1);
   # Second 2 layer conv (kernel size 3 and 16 channels)
-  w_2_1,b_2_1=conv_variable([3,3,8,16]);
-  w_2_2,b_2_2=conv_variable([3,3,16,16]);
+  w_2_1,b_2_1=conv_variable([3,3,6,16]);
   h_2_1=tf.nn.relu(conv2d(img_pair,w_2_1,1)+b_2_1);
-  h_2_2=tf.nn.relu(conv2d(h_2_1,w_2_2,1)+b_2_2);
+  w_2_2,b_2_2=conv_variable([3,3,16,16]);
+  h_2_2=tf.nn.relu(conv2d(h_2_1,w_2_2,1)+b_2_2+h_2_1);
   en_pair=tf.concat([h_1_2,h_2_2],3);
   # Third 2 layer conv (kernel size 3 and 16 channels)
   w_3_1,b_3_1=conv_variable([3,3,20,16]);
-  w_3_2,b_3_2=conv_variable([3,3,16,16]);
   h_3_1=tf.nn.relu(conv2d(en_pair,w_3_1,1)+b_3_1);
-  h_3_2=tf.nn.relu(conv2d(h_3_1,w_3_2,1)+b_3_2);
+  w_3_2,b_3_2=conv_variable([3,3,16,16]);
+  h_3_2=tf.nn.relu(conv2d(h_3_1,w_3_2,1)+b_3_2+h_3_1);
   # Inject x and y coordinate channels
   h_3_2_x_y=tf.concat([h_3_2,x_cor,y_cor],3);
+  """
+  h_3_2_x_y=tf.concat([img_pair,x_cor,y_cor],3);
   # Fourth conv and max-pooling layers to unit height and width
-  w_4_1,b_4_1=conv_variable([3,3,18,16]);
+  w_4_1,b_4_1=conv_variable([3,3,(FLAGS.col_dim*2+2),32]);
   h_4_1=tf.nn.relu(conv2d(h_3_2_x_y,w_4_1,1)+b_4_1);
+  #w_4_1_2,b_4_1_2=conv_variable([3,3,32,32]);
+  #h_4_1=tf.nn.relu(conv2d(h_4_1,w_4_1_2,1)+b_4_1_2+h_4_1);
   h_4_1=maxpool2d(h_4_1);
-  w_4_2,b_4_2=conv_variable([3,3,16,16]);
+  w_4_2,b_4_2=conv_variable([3,3,32,32]);
   h_4_2=tf.nn.relu(conv2d(h_4_1,w_4_2,1)+b_4_2);
+  #h_4_2=tf.nn.relu(conv2d(h_4_1,w_4_2,1)+b_4_2+h_4_1);
+  #w_4_2_2,b_4_2_2=conv_variable([3,3,32,32]);
+  #h_4_2=tf.nn.relu(conv2d(h_4_2,w_4_2_2,1)+b_4_2_2+h_4_2);
   h_4_2=maxpool2d(h_4_2);
-  w_4_3,b_4_3=conv_variable([3,3,16,16]);
+  w_4_3,b_4_3=conv_variable([3,3,32,32]);
   h_4_3=tf.nn.relu(conv2d(h_4_2,w_4_3,1)+b_4_3);
+  #h_4_3=tf.nn.relu(conv2d(h_4_2,w_4_3,1)+b_4_3+h_4_2);
+  #w_4_3_2,b_4_3_2=conv_variable([3,3,32,32]);
+  #h_4_3=tf.nn.relu(conv2d(h_4_3,w_4_3_2,1)+b_4_3_2+h_4_3);
   h_4_3=maxpool2d(h_4_3);
-  w_4_4,b_4_4=conv_variable([3,3,16,32]);
+  w_4_4,b_4_4=conv_variable([3,3,32,32]);
   h_4_4=tf.nn.relu(conv2d(h_4_3,w_4_4,1)+b_4_4);
+  #h_4_4=tf.nn.relu(conv2d(h_4_3,w_4_4,1)+b_4_4+h_4_3);
+  #w_4_4_2,b_4_4_2=conv_variable([3,3,32,32]);
+  #h_4_4=tf.nn.relu(conv2d(h_4_4,w_4_4_2,1)+b_4_4_2+h_4_4);
   h_4_4=maxpool2d(h_4_4);
   w_4_5,b_4_5=conv_variable([3,3,32,32]);
   h_4_5=tf.nn.relu(conv2d(h_4_4,w_4_5,1)+b_4_5);
+  #h_4_5=tf.nn.relu(conv2d(h_4_4,w_4_5,1)+b_4_5+h_4_4);
+  #w_4_5_2,b_4_5_2=conv_variable([3,3,32,32]);
+  #h_4_5=tf.nn.relu(conv2d(h_4_5,w_4_5_2,1)+b_4_5_2+h_4_5);
   h_4_5=maxpool2d(h_4_5)
-  res_pair=tf.reshape(h_4_5,[-1,32]);
+  w_4_6,b_4_6=conv_variable([3,3,32,32]);
+  h_4_6=tf.nn.relu(conv2d(h_4_5,w_4_6,1)+b_4_6);
+  #h_4_5=tf.nn.relu(conv2d(h_4_4,w_4_5,1)+b_4_5+h_4_4);
+  #w_4_5_2,b_4_5_2=conv_variable([3,3,32,32]);
+  #h_4_5=tf.nn.relu(conv2d(h_4_5,w_4_5_2,1)+b_4_5_2+h_4_5);
+  h_4_6=maxpool2d(h_4_6)
+  res_pair=tf.reshape(h_4_6,[-1,32]);
   pair1=tf.slice(res_pair,[0,0],[FLAGS.batch_num,-1]);
   pair2=tf.slice(res_pair,[FLAGS.batch_num,0],[FLAGS.batch_num,-1]);
   pair3=tf.slice(res_pair,[FLAGS.batch_num*2,0],[FLAGS.batch_num,-1]);
@@ -99,10 +122,10 @@ def VE(F1,F2,F3,F4,F5,F6,x_cor,y_cor,FLAGS):
   w1 = tf.Variable(tf.truncated_normal([128, 64], stddev=0.1), dtype=tf.float32);
   b1 = tf.Variable(tf.zeros([64]), dtype=tf.float32);
   h1 = tf.nn.relu(tf.matmul(three, w1) + b1);
-  w2 = tf.Variable(tf.truncated_normal([64, 64], stddev=0.1), dtype=tf.float32);
-  b2 = tf.Variable(tf.zeros([64]), dtype=tf.float32);
+  w2 = tf.Variable(tf.truncated_normal([64, FLAGS.Ds], stddev=0.1), dtype=tf.float32);
+  b2 = tf.Variable(tf.zeros([FLAGS.Ds]), dtype=tf.float32);
   h2 = tf.matmul(h1, w2) + b2;
-  h2 = tf.reshape(h2,[-1,FLAGS.No,64]);
+  h2 = tf.reshape(h2,[-1,FLAGS.No,FLAGS.Ds]);
   S1=tf.slice(h2,[0,0,0],[FLAGS.batch_num,-1,-1]);
   S2=tf.slice(h2,[FLAGS.batch_num,0,0],[FLAGS.batch_num,-1,-1]);
   S3=tf.slice(h2,[FLAGS.batch_num*2,0,0],[FLAGS.batch_num,-1,-1]);
@@ -163,7 +186,7 @@ def core(S1,S3,S4,FLAGS):
   h3_aff = tf.matmul(h2_aff, w3_aff) + b3_aff;
   M_affect = tf.reshape(h3_aff,[-1,FLAGS.No,64]);
   # Output MLP
-  M_i_M_affect = tf.concat([S,M_affect],2);
+  M_i_M_affect = tf.concat([S,M_update],2);
   out_in=tf.reshape(M_i_M_affect,[-1,FLAGS.Ds+64]);
   w1_out = tf.Variable(tf.truncated_normal([FLAGS.Ds+64, 64], stddev=0.1), dtype=tf.float32);
   b1_out = tf.Variable(tf.zeros([64]), dtype=tf.float32);
@@ -196,6 +219,6 @@ def SD(output_dp,FLAGS):
   input_sd=tf.reshape(output_dp,[-1,64]);
   w1 = tf.Variable(tf.truncated_normal([64, 4], stddev=0.1), dtype=tf.float32);
   b1 = tf.Variable(tf.zeros([4]), dtype=tf.float32);
-  h1 = tf.nn.relu(tf.matmul(input_sd, w1) + b1);
+  h1 = tf.matmul(input_sd, w1) + b1;
   h1=tf.reshape(h1,[-1,FLAGS.No,4]);
   return h1;

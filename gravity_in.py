@@ -170,7 +170,7 @@ if __name__ == '__main__':
                       help='the number of training sets')
   parser.add_argument('--batch_num', type=int, default=4,
                       help='The number of data on each mini batch')
-  parser.add_argument('--max_epoches', type=int, default=1000,
+  parser.add_argument('--max_epoches', type=int, default=40000,
                       help='Maximum limitation of epoches')
   parser.add_argument('--Ds', type=int, default=5,
                       help='The dimension of State')

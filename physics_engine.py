@@ -107,12 +107,12 @@ def make_image(xy,img_folder,prefix):
   fig_num=len(xy);
   mydpi=100;
   for i in range(fig_num):
-    fig = plt.figure(figsize=(32/mydpi,32/mydpi))
+    fig = plt.figure(figsize=(64/mydpi,64/mydpi))
     plt.xlim(-200, 200)
     plt.ylim(-200, 200)
     color=['r','b','g','k','y','m','c'];
     for j in range(len(xy[0])):
-      plt.scatter(xy[i,j,1],xy[i,j,0],c=color[j%len(color)],s=2);
+      plt.scatter(xy[i,j,1],xy[i,j,0],c=color[j%len(color)],s=4);
     fig.savefig(img_folder+prefix+"_"+str(i)+".png",dpi=mydpi);
 
 def make_file(data,data_folder,prefix):
@@ -130,7 +130,7 @@ def gen_make(n_body,orbit,img_folder,data_folder,prefix):
   make_file(data,data_folder,str(prefix));
   
 if __name__=='__main__':
-  for i in range(10):
+  for i in range(1):
     data=gen(No,True);
     xy=data[:,:,1:3];
     make_image(xy,img_folder+"train/",str(i));

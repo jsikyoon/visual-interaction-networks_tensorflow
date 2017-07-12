@@ -32,18 +32,18 @@ def train():
   # Architecture Definition
   F=tf.placeholder(tf.float32, [None,6,FLAGS.height,FLAGS.weight,FLAGS.col_dim], name="F");
   F1,F2,F3,F4,F5,F6=tf.unstack(F,6,1);
-  label=tf.placeholder(tf.float32, [None,FLAGS.No,4], name="label");
+  label=tf.placeholder(tf.float32, [None,4,FLAGS.No,4], name="label");
+  label1,label2,label3,label4=tf.unstack(label,4,1);
   # x and y coordinate channels
   x_cor=tf.placeholder(tf.float32, [None,FLAGS.height,FLAGS.weight,1], name="x_cor");
   y_cor=tf.placeholder(tf.float32, [None,FLAGS.height,FLAGS.weight,1], name="y_cor");
 
   S1,S2,S3,S4=VE(F1,F2,F3,F4,F5,F6,x_cor,y_cor,FLAGS);
-  out_dp=DP(S1,S2,S3,S4,FLAGS);
-  out_sd=SD(out_dp,FLAGS);
+  S=tf.stack([S1,S2,S3,S4],1);
 
   # loss and optimizer
-  mse=tf.reduce_mean(tf.reduce_mean(tf.square(out_sd-label),[1,2]));
-  optimizer = tf.train.AdamOptimizer(0.0005);
+  mse=tf.reduce_mean(tf.reduce_mean(tf.square(S-label),[1,2]));
+  optimizer = tf.train.AdamOptimizer(0.00001);
   trainer=optimizer.minimize(mse);
 
   # tensorboard
@@ -61,19 +61,19 @@ def train():
   total_img=np.zeros((FLAGS.set_num,1000,FLAGS.height,FLAGS.weight,FLAGS.col_dim),dtype=float);
   for i in range(FLAGS.set_num):
     for j in range(1000):
-      total_img[i,j]=mpimg.imread(img_folder+"train/"+str(i)+'_'+str(j)+'.png')[:,:,:3];
+      total_img[i,j]=mpimg.imread(img_folder+"train/"+str(i)+'_'+str(j)+'.png')[:,:,:FLAGS.col_dim];
   total_data=np.zeros((FLAGS.set_num,1000,FLAGS.No*5),dtype=float);
   for i in range(FLAGS.set_num):
     f=open(data_folder+"train/"+str(i)+".csv","r");
     total_data[i]=[line[:-1].split(",") for line in f.readlines()];
 
   # reshape img and data
-  input_img=np.zeros((FLAGS.set_num*(1000-7+1),6,FLAGS.height,FLAGS.weight,FLAGS.col_dim),dtype=float);
-  output_label=np.zeros((FLAGS.set_num*(1000-7+1),FLAGS.No,4),dtype=float);
+  input_img=np.zeros((FLAGS.set_num*(1000-6+1),6,FLAGS.height,FLAGS.weight,FLAGS.col_dim),dtype=float);
+  output_label=np.zeros((FLAGS.set_num*(1000-6+1),4,FLAGS.No,4),dtype=float);
   for i in range(FLAGS.set_num):
     for j in range(1000-7+1):
       input_img[i*(1000-7+1)+j]=total_img[i,j:j+6];
-      output_label[i*(1000-7+1)+j]=np.reshape(total_data[i,j+6],[FLAGS.No,5])[:,1:5];
+      output_label[i*(1000-7+1)+j]=np.reshape(total_data[i,j+2:j+6],[4,FLAGS.No,5])[:,:,1:5];
 
   # shuffle
   tr_data_num=int(len(input_img)*0.8);
@@ -120,35 +120,6 @@ def train():
     val_data=val_data[val_idx];
     val_label=val_label[val_idx];
     print("Epoch "+str(i+1)+" Training MSE: "+str(tr_loss/(int(len(tr_data)/FLAGS.batch_num)))+" Validation MSE: "+str(val_loss/(j+1)));
-  
-  ts_frame_num=300;
-  # Get Test Image and Data 
-  ts_img=np.zeros((1,1000,FLAGS.height,FLAGS.weight,FLAGS.col_dim),dtype=float);
-  for i in range(1):
-    for j in range(1000):
-      ts_img[i,j]=mpimg.imread(img_folder+"train/"+str(i)+"_"+str(j)+'.png')[:,:,:3];
-  ts_data=np.zeros((1,1000,FLAGS.No*5),dtype=float);
-  for i in range(1):
-    f=open(data_folder+"train/"+str(i)+".csv","r");
-    ts_data[i]=[line[:-1].split(",") for line in f.readlines()];
-  
-  # reshape img and data
-  input_img=np.zeros((1*(1000-7+1),6,FLAGS.height,FLAGS.weight,FLAGS.col_dim),dtype=float);
-  output_label=np.zeros((1*(1000-7+1),FLAGS.No,4),dtype=float);
-  for i in range(1):
-    for j in range(1000-7+1):
-      input_img[i*(1000-7+1)+j]=total_img[i,j:j+6];
-      output_label[i*(1000-7+1)+j]=np.reshape(total_data[i,j+6],[FLAGS.No,5])[:,1:5];
-
-  xy_origin=output_label[:,:,0:2];
-  xy_estimated=np.zeros((1*(1000-7+1),No,2),dtype=float);
-  for i in range(len(input_img)):
-    xy_estimated[i]=sess.run(label,feed_dict={F:[input_img[i]],label:[output_label[i]],x_cor:xcor[0:4],y_cor:ycor[0:4]})[:,:,1:3];
-  print("Video Recording");
-  make_video(xy_origin[:ts_frame_num],"true"+str(time.time())+".mp4");
-  make_video(xy_estimated[:ts_frame_num],"modeling"+str(time.time())+".mp4");
-  print("Done");
-
 
 def main(_):
   FLAGS.log_dir+=str(int(time.time()));
@@ -156,9 +127,9 @@ def main(_):
     tf.gfile.DeleteRecursively(FLAGS.log_dir)
   tf.gfile.MakeDirs(FLAGS.log_dir)
   FLAGS.No=No;
-  FLAGS.height=32;
-  FLAGS.weight=32;
-  FLAGS.col_dim=3;
+  FLAGS.height=64;
+  FLAGS.weight=64;
+  FLAGS.col_dim=4;
   train()
 
 if __name__ == '__main__':
@@ -169,9 +140,9 @@ if __name__ == '__main__':
                       help='the number of training sets')
   parser.add_argument('--batch_num', type=int, default=4,
                       help='The number of data on each mini batch')
-  parser.add_argument('--max_epoches', type=int, default=3000,
+  parser.add_argument('--max_epoches', type=int, default=4000,
                       help='Maximum limitation of epoches')
-  parser.add_argument('--Ds', type=int, default=64,
+  parser.add_argument('--Ds', type=int, default=4,
                       help='The State Code Dimension')
 
   FLAGS, unparsed = parser.parse_known_args()
