@@ -112,8 +112,8 @@ def VE(F1,F2,F3,F4,F5,F6,x_cor,y_cor,FLAGS):
   S4=tf.slice(h3,[FLAGS.batch_num*3,0,0],[FLAGS.batch_num,-1,-1]);
   return S1,S2,S3,S4;
 
-def core(S1,S3,S4,FLAGS):
-  S=tf.concat([S1,S3,S4],0);
+def core(S1,S3,S4,S1_r,S3_r,S4_r,FLAGS):
+  S=tf.concat([S1,S3,S4,S1_r,S3_r,S4_r],0);
   M=tf.unstack(S,FLAGS.No,1);
   # Self-Dynamics MLP
   SD_in=tf.reshape(S,[-1,FLAGS.Ds]);
@@ -145,7 +145,7 @@ def core(S1,S3,S4,FLAGS):
   for i in range(rel_num):
     row_idx=int(i/FLAGS.No);
     col_idx=int(i%FLAGS.No);
-    M_rel[i]=tf.slice(h3_rel,[FLAGS.batch_num*3*i,0],[FLAGS.batch_num*3,-1]);
+    M_rel[i]=tf.slice(h3_rel,[(FLAGS.batch_num*3+3)*i,0],[(FLAGS.batch_num*3+3),-1]);
   M_rel2=np.zeros(FLAGS.No,dtype=object);
   for i in range(FLAGS.No):
     for j in range(FLAGS.No-1):
@@ -178,12 +178,17 @@ def core(S1,S3,S4,FLAGS):
   Sc1=tf.slice(h2_out,[0,0,0],[FLAGS.batch_num,-1,-1]);
   Sc3=tf.slice(h2_out,[FLAGS.batch_num,0,0],[FLAGS.batch_num,-1,-1]);
   Sc4=tf.slice(h2_out,[FLAGS.batch_num*2,0,0],[FLAGS.batch_num,-1,-1]);
-  return Sc1,Sc3,Sc4;
+  Sc1_r=tf.slice(h2_out,[FLAGS.batch_num*3,0,0],[1,-1,-1]);
+  Sc3_r=tf.slice(h2_out,[FLAGS.batch_num*3+1,0,0],[1,-1,-1]);
+  Sc4_r=tf.slice(h2_out,[FLAGS.batch_num*3+2,0,0],[1,-1,-1]);
+  return Sc1,Sc3,Sc4,Sc1_r,Sc3_r,Sc4_r;
 
-def DP(S1,S2,S3,S4,FLAGS):
-  Sc1,Sc3,Sc4=core(S1,S3,S4,FLAGS);
+def DP(S1,S2,S3,S4,S1_r,S2_r,S3_r,S4_r,FLAGS):
+  Sc1,Sc3,Sc4,Sc1_r,Sc3_r,Sc4_r=core(S1,S3,S4,S1_r,S3_r,S4_r,FLAGS);
   # Aggregator MLP
   S=tf.concat([Sc1,Sc3,Sc4],2);
+  S_r=tf.concat([Sc1_r,Sc3_r,Sc4_r],2);
+  S=tf.concat([S,S_r],0);
   S=tf.reshape(S,[-1,192]);
   w1 = tf.Variable(tf.truncated_normal([192, 32], stddev=0.1), dtype=tf.float32);
   b1 = tf.Variable(tf.zeros([32]), dtype=tf.float32);
@@ -192,7 +197,9 @@ def DP(S1,S2,S3,S4,FLAGS):
   b2 = tf.Variable(tf.zeros([FLAGS.Ds*8]), dtype=tf.float32);
   h2 = tf.matmul(h1, w2) + b2;
   h2=tf.reshape(h2,[-1,FLAGS.No,FLAGS.Ds*8]);
-  return h2;
+  out_dp=tf.slice(h2,[0,0,0],[FLAGS.batch_num,-1,-1]);
+  out_dp_r=tf.slice(h2,[FLAGS.batch_num,0,0],[1,-1,-1]);
+  return out_dp,out_dp_r;
 
 def SD(output_dp,FLAGS):
   # State Decoder

@@ -17,6 +17,7 @@ from constants import No
 from constants import img_folder
 from constants import data_folder
 from constants import frame_num
+from constants import set_num
 
 # 7 features on the state [mass,x,y,x_vel,y_vel]
 fea_num=5;
@@ -118,6 +119,20 @@ def make_image(xy,img_folder,prefix):
       plt.scatter(xy[i,j,1],xy[i,j,0],c=color[j%len(color)],s=2);
     fig.savefig(img_folder+prefix+"_"+str(i)+".png",dpi=mydpi);
 
+def make_image2(xy,img_folder,prefix):
+  if not os.path.exists(img_folder):
+    os.makedirs(img_folder);
+  fig_num=len(xy);
+  mydpi=100;
+  for i in range(fig_num):
+    fig = plt.figure(figsize=(128/mydpi,128/mydpi))
+    plt.xlim(-200, 200)
+    plt.ylim(-200, 200)
+    color=['r','b','g','k','y','m','c'];
+    for j in range(len(xy[0])):
+      plt.scatter(xy[i,j,1],xy[i,j,0],c=color[j%len(color)],s=5);
+    fig.savefig(img_folder+prefix+"_"+str(i)+".png",dpi=mydpi);
+
 def make_file(data,data_folder,prefix):
   if not os.path.exists(data_folder):
     os.makedirs(data_folder);
@@ -133,15 +148,16 @@ def gen_make(n_body,orbit,img_folder,data_folder,prefix):
   make_file(data,data_folder,str(prefix));
   
 if __name__=='__main__':
-  for i in range(1):
+  # Making Training Data
+  for i in range(set_num):
     data=gen(No,True);
     xy=data[:,:,1:3];
     make_image(xy,img_folder+"train/",str(i));
     make_file(data,data_folder+"train/",str(i));
-  #data=gen(No,True);
-  #xy=data[:,:,1:3];
-  #make_image(xy,img_folder+"test/",str(0));
-  #make_file(data,data_folder+"test/",str(0));
-  #data=gen(No,True);
+  # Making Test Data
+  data=gen(No,True);
   xy=data[:,:,1:3];
-  make_video(xy,"test.mp4");
+  make_image(xy,img_folder+"test/",str(0));
+  make_file(data,data_folder+"test/",str(0));
+  
+  #make_video(xy,"test.mp4");
