@@ -16,25 +16,24 @@ import cv2
 from constants import No
 from constants import img_folder
 from constants import data_folder
+from constants import frame_num
 
-# 1000 time steps
-total_state=1000;
 # 7 features on the state [mass,x,y,x_vel,y_vel]
 fea_num=5;
 # G 
 #G = 6.67428e-11;
-G=10**5;
+G=10**6;
 # time step
 diff_t=0.001;
 
-def init(total_state,n_body,fea_num,orbit):
-  data=np.zeros((total_state,n_body,fea_num),dtype=float);
+def init(frame_num,n_body,fea_num,orbit):
+  data=np.zeros((frame_num,n_body,fea_num),dtype=float);
   if(orbit):
     data[0][0][0]=100;
     data[0][0][1:5]=0.0;
     for i in range(1,n_body):
       data[0][i][0]=np.random.rand()*8.98+0.02;
-      distance=np.random.rand()*90.0+10.0;
+      distance=np.random.rand()*10.0+150.0;
       theta=np.random.rand()*360;
       theta_rad = pi/2 - radians(theta);    
       data[0][i][1]=distance*cos(theta_rad);
@@ -80,8 +79,8 @@ def calc(cur_state,n_body):
 
 def gen(n_body,orbit):
   # initialization on just first state
-  data=init(total_state,n_body,fea_num,orbit);
-  for i in range(1,total_state):
+  data=init(frame_num,n_body,fea_num,orbit);
+  for i in range(1,frame_num):
     data[i]=calc(data[i-1],n_body);
   return data;
 
@@ -90,15 +89,19 @@ def make_video(xy,filename):
   metadata = dict(title='Movie Test', artist='Matplotlib',
                   comment='Movie support!')
   writer = FFMpegWriter(fps=15, metadata=metadata)
-  fig = plt.figure()
+  #fig = plt.figure()
+  mydpi=100;
+  fig = plt.figure(figsize=(32/mydpi,32/mydpi))
   plt.xlim(-200, 200)
   plt.ylim(-200, 200)
   fig_num=len(xy);
-  color=['ro','bo','go','ko','yo','mo','co'];
+  #color=['ro','bo','go','ko','yo','mo','co'];
+  color=['r','b','g','k','y','m','c'];
   with writer.saving(fig, filename, len(xy)):
     for i in range(len(xy)):
       for j in range(len(xy[0])):
-        plt.plot(xy[i,j,1],xy[i,j,0],color[j%len(color)]);
+        #plt.plot(xy[i,j,1],xy[i,j,0],color[j%len(color)]);
+        plt.scatter(xy[i,j,1],xy[i,j,0],c=color[j%len(color)],s=2);
       writer.grab_frame();
 
 def make_image(xy,img_folder,prefix):
@@ -107,12 +110,12 @@ def make_image(xy,img_folder,prefix):
   fig_num=len(xy);
   mydpi=100;
   for i in range(fig_num):
-    fig = plt.figure(figsize=(64/mydpi,64/mydpi))
+    fig = plt.figure(figsize=(32/mydpi,32/mydpi))
     plt.xlim(-200, 200)
     plt.ylim(-200, 200)
     color=['r','b','g','k','y','m','c'];
     for j in range(len(xy[0])):
-      plt.scatter(xy[i,j,1],xy[i,j,0],c=color[j%len(color)],s=4);
+      plt.scatter(xy[i,j,1],xy[i,j,0],c=color[j%len(color)],s=2);
     fig.savefig(img_folder+prefix+"_"+str(i)+".png",dpi=mydpi);
 
 def make_file(data,data_folder,prefix):
@@ -135,7 +138,10 @@ if __name__=='__main__':
     xy=data[:,:,1:3];
     make_image(xy,img_folder+"train/",str(i));
     make_file(data,data_folder+"train/",str(i));
-  data=gen(No,True);
+  #data=gen(No,True);
+  #xy=data[:,:,1:3];
+  #make_image(xy,img_folder+"test/",str(0));
+  #make_file(data,data_folder+"test/",str(0));
+  #data=gen(No,True);
   xy=data[:,:,1:3];
-  make_image(xy,img_folder+"test/",str(0));
-  make_file(data,data_folder+"test/",str(0));
+  make_video(xy,"test.mp4");

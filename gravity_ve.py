@@ -33,17 +33,18 @@ def train():
   F=tf.placeholder(tf.float32, [None,6,FLAGS.height,FLAGS.weight,FLAGS.col_dim], name="F");
   F1,F2,F3,F4,F5,F6=tf.unstack(F,6,1);
   label=tf.placeholder(tf.float32, [None,4,FLAGS.No,4], name="label");
-  label1,label2,label3,label4=tf.unstack(label,4,1);
   # x and y coordinate channels
   x_cor=tf.placeholder(tf.float32, [None,FLAGS.height,FLAGS.weight,1], name="x_cor");
   y_cor=tf.placeholder(tf.float32, [None,FLAGS.height,FLAGS.weight,1], name="y_cor");
 
   S1,S2,S3,S4=VE(F1,F2,F3,F4,F5,F6,x_cor,y_cor,FLAGS);
   S=tf.stack([S1,S2,S3,S4],1);
+  #S1,S2,S3,S4,S5=VE(F1,F2,F3,F4,F5,F6,x_cor,y_cor,FLAGS);
+  #S=tf.stack([S1,S2,S3,S4,S5],1);
 
   # loss and optimizer
   mse=tf.reduce_mean(tf.reduce_mean(tf.square(S-label),[1,2]));
-  optimizer = tf.train.AdamOptimizer(0.00001);
+  optimizer = tf.train.AdamOptimizer(0.0005);
   trainer=optimizer.minimize(mse);
 
   # tensorboard
@@ -58,22 +59,22 @@ def train():
   tf.global_variables_initializer().run();
 
   # Get Training Image and Data 
-  total_img=np.zeros((FLAGS.set_num,1000,FLAGS.height,FLAGS.weight,FLAGS.col_dim),dtype=float);
+  total_img=np.zeros((FLAGS.set_num,200,FLAGS.height,FLAGS.weight,FLAGS.col_dim),dtype=float);
   for i in range(FLAGS.set_num):
-    for j in range(1000):
+    for j in range(200):
       total_img[i,j]=mpimg.imread(img_folder+"train/"+str(i)+'_'+str(j)+'.png')[:,:,:FLAGS.col_dim];
-  total_data=np.zeros((FLAGS.set_num,1000,FLAGS.No*5),dtype=float);
+  total_data=np.zeros((FLAGS.set_num,200,FLAGS.No*5),dtype=float);
   for i in range(FLAGS.set_num):
     f=open(data_folder+"train/"+str(i)+".csv","r");
     total_data[i]=[line[:-1].split(",") for line in f.readlines()];
 
   # reshape img and data
-  input_img=np.zeros((FLAGS.set_num*(1000-6+1),6,FLAGS.height,FLAGS.weight,FLAGS.col_dim),dtype=float);
-  output_label=np.zeros((FLAGS.set_num*(1000-6+1),4,FLAGS.No,4),dtype=float);
+  input_img=np.zeros((FLAGS.set_num*(200-6+1),6,FLAGS.height,FLAGS.weight,FLAGS.col_dim),dtype=float);
+  output_label=np.zeros((FLAGS.set_num*(200-6+1),4,FLAGS.No,4),dtype=float);
   for i in range(FLAGS.set_num):
-    for j in range(1000-7+1):
-      input_img[i*(1000-7+1)+j]=total_img[i,j:j+6];
-      output_label[i*(1000-7+1)+j]=np.reshape(total_data[i,j+2:j+6],[4,FLAGS.No,5])[:,:,1:5];
+    for j in range(200-7+1):
+      input_img[i*(200-7+1)+j]=total_img[i,j:j+6];
+      output_label[i*(200-7+1)+j]=np.reshape(total_data[i,j+2:j+6],[4,FLAGS.No,5])[:,:,1:5];
 
   # shuffle
   tr_data_num=int(len(input_img)*0.8);
@@ -127,8 +128,8 @@ def main(_):
     tf.gfile.DeleteRecursively(FLAGS.log_dir)
   tf.gfile.MakeDirs(FLAGS.log_dir)
   FLAGS.No=No;
-  FLAGS.height=64;
-  FLAGS.weight=64;
+  FLAGS.height=32;
+  FLAGS.weight=32;
   FLAGS.col_dim=4;
   train()
 
