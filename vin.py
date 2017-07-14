@@ -112,18 +112,19 @@ def VE(F1,F2,F3,F4,F5,F6,x_cor,y_cor,FLAGS):
   S4=tf.slice(h3,[FLAGS.batch_num*3,0,0],[FLAGS.batch_num,-1,-1]);
   return S1,S2,S3,S4;
 
-def core(S1,S3,S4,S1_r,S3_r,S4_r,FLAGS):
-  S=tf.concat([S1,S3,S4,S1_r,S3_r,S4_r],0);
+def core(S1,S3,S4,FLAGS):
+  S=tf.concat([S1,S3,S4],0);
   M=tf.unstack(S,FLAGS.No,1);
   # Self-Dynamics MLP
   SD_in=tf.reshape(S,[-1,FLAGS.Ds]);
-  w1_sd = tf.Variable(tf.truncated_normal([FLAGS.Ds, 64], stddev=0.1), dtype=tf.float32);
-  b1_sd = tf.Variable(tf.zeros([64]), dtype=tf.float32);
-  h1_sd = tf.nn.relu(tf.matmul(SD_in, w1_sd) + b1_sd);
-  w2_sd = tf.Variable(tf.truncated_normal([64, 64], stddev=0.1), dtype=tf.float32);
-  b2_sd = tf.Variable(tf.zeros([64]), dtype=tf.float32);
-  h2_sd = tf.matmul(h1_sd, w2_sd) + b2_sd;
-  M_self = tf.reshape(h2_sd,[-1,FLAGS.No,64]);
+  with tf.variable_scope('self-dynamics'):
+    w1 = tf.get_variable('w1',shape=[FLAGS.Ds, 64]);
+    b1 = tf.get_variable('b1',shape=[64]);
+    h1 = tf.nn.relu(tf.matmul(SD_in, w1) + b1);
+    w2 = tf.get_variable('w2',shape=[64, 64]);
+    b2 = tf.get_variable('b2',shape=[64]);
+    h2 = tf.matmul(h1, w2) + b2;
+  M_self = tf.reshape(h2,[-1,FLAGS.No,64]);
   # Relation MLP
   rel_num=int((FLAGS.No)*(FLAGS.No+1)/2);
   rel_in=np.zeros(rel_num,dtype=object);
@@ -132,20 +133,21 @@ def core(S1,S3,S4,S1_r,S3_r,S4_r,FLAGS):
     col_idx=int(i%FLAGS.No);
     rel_in[i]=tf.concat([M[row_idx],M[col_idx]],1);
   rel_in=tf.concat(list(rel_in),0);
-  w1_rel = tf.Variable(tf.truncated_normal([FLAGS.Ds*2, 64], stddev=0.1), dtype=tf.float32);
-  b1_rel = tf.Variable(tf.zeros([64]), dtype=tf.float32);
-  h1_rel = tf.nn.relu(tf.matmul(rel_in, w1_rel) + b1_rel);
-  w2_rel = tf.Variable(tf.truncated_normal([64, 64], stddev=0.1), dtype=tf.float32);
-  b2_rel = tf.Variable(tf.zeros([64]), dtype=tf.float32);
-  h2_rel = tf.nn.relu(tf.matmul(h1_rel, w2_rel) + b2_rel);
-  w3_rel = tf.Variable(tf.truncated_normal([64, 64], stddev=0.1), dtype=tf.float32);
-  b3_rel = tf.Variable(tf.zeros([64]), dtype=tf.float32);
-  h3_rel = tf.matmul(h2_rel, w3_rel) + b3_rel;
+  with tf.variable_scope('Relation'):
+    w1 = tf.get_variable('w1',shape=[FLAGS.Ds*2, 64]);
+    b1 = tf.get_variable('b1',shape=[64]);
+    h1 = tf.nn.relu(tf.matmul(rel_in, w1) + b1);
+    w2 = tf.get_variable('w2',shape=[64, 64]);
+    b2 = tf.get_variable('b2',shape=[64]);
+    h2 = tf.nn.relu(tf.matmul(h1, w2) + b2);
+    w3 = tf.get_variable('w3',shape=[64, 64]);
+    b3 = tf.get_variable('b3',shape=[64]);
+    h3 = tf.matmul(h2, w3) + b3;
   M_rel=np.zeros(rel_num,dtype=object);
   for i in range(rel_num):
     row_idx=int(i/FLAGS.No);
     col_idx=int(i%FLAGS.No);
-    M_rel[i]=tf.slice(h3_rel,[(FLAGS.batch_num*3+3)*i,0],[(FLAGS.batch_num*3+3),-1]);
+    M_rel[i]=tf.slice(h3,[(FLAGS.batch_num*3)*i,0],[(FLAGS.batch_num*3),-1]);
   M_rel2=np.zeros(FLAGS.No,dtype=object);
   for i in range(FLAGS.No):
     for j in range(FLAGS.No-1):
@@ -155,60 +157,54 @@ def core(S1,S3,S4,S1_r,S3_r,S4_r,FLAGS):
   M_update=M_self+M_rel2;
   # Affector MLP
   aff_in=tf.reshape(M_update,[-1,64]);
-  w1_aff = tf.Variable(tf.truncated_normal([64, 64], stddev=0.1), dtype=tf.float32);
-  b1_aff = tf.Variable(tf.zeros([64]), dtype=tf.float32);
-  h1_aff = tf.nn.relu(tf.matmul(aff_in, w1_aff) + b1_aff);
-  w2_aff = tf.Variable(tf.truncated_normal([64, 64], stddev=0.1), dtype=tf.float32);
-  b2_aff = tf.Variable(tf.zeros([64]), dtype=tf.float32);
-  h2_aff = tf.nn.relu(tf.matmul(h1_aff, w2_aff) + b2_aff);
-  w3_aff = tf.Variable(tf.truncated_normal([64, 64], stddev=0.1), dtype=tf.float32);
-  b3_aff = tf.Variable(tf.zeros([64]), dtype=tf.float32);
-  h3_aff = tf.matmul(h2_aff, w3_aff) + b3_aff;
-  M_affect = tf.reshape(h3_aff,[-1,FLAGS.No,64]);
+  with tf.variable_scope('Affector'):
+    w1 = tf.get_variable('w1',shape=[64, 64]);
+    b1 = tf.get_variable('b1',shape=[64]);
+    h1 = tf.nn.relu(tf.matmul(aff_in, w1) + b1);
+    w2 = tf.get_variable('w2',shape=[64, 64]);
+    b2 = tf.get_variable('b2',shape=[64]);
+    h2 = tf.nn.relu(tf.matmul(h1, w2) + b2);
+    w3 = tf.get_variable('w3',shape=[64, 64]);
+    b3 = tf.get_variable('b3',shape=[64]);
+    h3 = tf.matmul(h2, w3) + b3;
+  M_affect = tf.reshape(h3,[-1,FLAGS.No,64]);
   # Output MLP
   M_i_M_affect = tf.concat([S,M_update],2);
   out_in=tf.reshape(M_i_M_affect,[-1,FLAGS.Ds+64]);
-  w1_out = tf.Variable(tf.truncated_normal([FLAGS.Ds+64, 64], stddev=0.1), dtype=tf.float32);
-  b1_out = tf.Variable(tf.zeros([64]), dtype=tf.float32);
-  h1_out = tf.nn.relu(tf.matmul(out_in, w1_out) + b1_out);
-  w2_out = tf.Variable(tf.truncated_normal([64, 64], stddev=0.1), dtype=tf.float32);
-  b2_out = tf.Variable(tf.zeros([64]), dtype=tf.float32);
-  h2_out = tf.matmul(h1_out, w2_out) + b2_out;
-  h2_out = tf.reshape(h2_out,[-1,FLAGS.No,64]);
+  with tf.variable_scope('Output'):
+    w1 = tf.get_variable('w1',shape=[FLAGS.Ds+64, 64]);
+    b1 = tf.get_variable('b1',shape=[64]);
+    h1 = tf.nn.relu(tf.matmul(out_in, w1) + b1);
+    w2 = tf.get_variable('w2',shape=[64, 64]);
+    b2 = tf.get_variable('b2',shape=[64]);
+    h2 = tf.matmul(h1, w2) + b2;
+  h2_out = tf.reshape(h2,[-1,FLAGS.No,64]);
   Sc1=tf.slice(h2_out,[0,0,0],[FLAGS.batch_num,-1,-1]);
   Sc3=tf.slice(h2_out,[FLAGS.batch_num,0,0],[FLAGS.batch_num,-1,-1]);
   Sc4=tf.slice(h2_out,[FLAGS.batch_num*2,0,0],[FLAGS.batch_num,-1,-1]);
-  Sc1_r=tf.slice(h2_out,[FLAGS.batch_num*3,0,0],[1,-1,-1]);
-  Sc3_r=tf.slice(h2_out,[FLAGS.batch_num*3+1,0,0],[1,-1,-1]);
-  Sc4_r=tf.slice(h2_out,[FLAGS.batch_num*3+2,0,0],[1,-1,-1]);
-  return Sc1,Sc3,Sc4,Sc1_r,Sc3_r,Sc4_r;
+  return Sc1,Sc3,Sc4;
 
-def DP(S1,S2,S3,S4,S1_r,S2_r,S3_r,S4_r,FLAGS):
-  Sc1,Sc3,Sc4,Sc1_r,Sc3_r,Sc4_r=core(S1,S3,S4,S1_r,S3_r,S4_r,FLAGS);
+def DP(S1,S2,S3,S4,FLAGS):
+  Sc1,Sc3,Sc4=core(S1,S3,S4,FLAGS);
   # Aggregator MLP
   S=tf.concat([Sc1,Sc3,Sc4],2);
-  S_r=tf.concat([Sc1_r,Sc3_r,Sc4_r],2);
-  S=tf.concat([S,S_r],0);
   S=tf.reshape(S,[-1,192]);
-  w1 = tf.Variable(tf.truncated_normal([192, 32], stddev=0.1), dtype=tf.float32);
-  b1 = tf.Variable(tf.zeros([32]), dtype=tf.float32);
-  h1 = tf.nn.relu(tf.matmul(S, w1) + b1);
-  w2 = tf.Variable(tf.truncated_normal([32, FLAGS.Ds*8], stddev=0.1), dtype=tf.float32);
-  b2 = tf.Variable(tf.zeros([FLAGS.Ds*8]), dtype=tf.float32);
-  h2 = tf.matmul(h1, w2) + b2;
-  h2=tf.reshape(h2,[-1,FLAGS.No,FLAGS.Ds*8]);
+  with tf.variable_scope("DP"):
+    w1 = tf.get_variable('w1',shape=[192, 32]);
+    b1 = tf.get_variable('b1',shape=[32]);
+    h1 = tf.nn.relu(tf.matmul(S, w1) + b1);
+    w2 = tf.get_variable('w2',shape=[32, FLAGS.Ds]);
+    b2 = tf.get_variable('b2',shape=[FLAGS.Ds]);
+    h2 = tf.matmul(h1, w2) + b2;
+  h2=tf.reshape(h2,[-1,FLAGS.No,FLAGS.Ds]);
   out_dp=tf.slice(h2,[0,0,0],[FLAGS.batch_num,-1,-1]);
-  out_dp_r=tf.slice(h2,[FLAGS.batch_num,0,0],[1,-1,-1]);
-  return out_dp,out_dp_r;
+  return out_dp;
 
 def SD(output_dp,FLAGS):
   # State Decoder
   input_sd=tf.reshape(output_dp,[-1,FLAGS.Ds]);
-  w0 = tf.Variable(tf.truncated_normal([FLAGS.Ds, 64], stddev=0.1), dtype=tf.float32);
-  b0 = tf.Variable(tf.zeros([64]), dtype=tf.float32);
-  h0 = tf.nn.relu(tf.matmul(input_sd, w0) + b0);
-  w1 = tf.Variable(tf.truncated_normal([64, 4], stddev=0.1), dtype=tf.float32);
+  w1 = tf.Variable(tf.truncated_normal([FLAGS.Ds, 4], stddev=0.1), dtype=tf.float32);
   b1 = tf.Variable(tf.zeros([4]), dtype=tf.float32);
-  h1 = tf.matmul(h0, w1) + b1;
+  h1 = tf.matmul(input_sd, w1) + b1;
   h1=tf.reshape(h1,[-1,FLAGS.No,4]);
   return h1;

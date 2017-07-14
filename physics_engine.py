@@ -23,7 +23,7 @@ from constants import set_num
 fea_num=5;
 # G 
 #G = 6.67428e-11;
-G=10**6;
+G=10**5;
 # time step
 diff_t=0.001;
 
@@ -34,7 +34,7 @@ def init(frame_num,n_body,fea_num,orbit):
     data[0][0][1:5]=0.0;
     for i in range(1,n_body):
       data[0][i][0]=np.random.rand()*8.98+0.02;
-      distance=np.random.rand()*10.0+150.0;
+      distance=np.random.rand()*90.0+10.0;
       theta=np.random.rand()*360;
       theta_rad = pi/2 - radians(theta);    
       data[0][i][1]=distance*cos(theta_rad);
