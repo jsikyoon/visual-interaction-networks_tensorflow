@@ -7,6 +7,7 @@ import sys
 import copy
 import tensorflow as tf
 
+import math
 import matplotlib.image as mpimg
 import numpy as np
 import time
@@ -152,9 +153,12 @@ def train():
   for i in range(FLAGS.batch_num*5):
     xcor[i]=xv; ycor[i]=yv;
 
+  # beta
+  beta = int(FLAGS.max_epoches*0.05);
   # training
   for i in range(FLAGS.max_epoches):
     #df_value=i/FLAGS.max_epoches;
+    #df_value=1-math.exp(-1*i/beta);
     df_value=0;
     tr_loss=0;
     for j in range(int(len(tr_data)/FLAGS.batch_num)):
