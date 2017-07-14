@@ -112,12 +112,11 @@ def VE(F1,F2,F3,F4,F5,F6,x_cor,y_cor,FLAGS):
   S4=tf.slice(h3,[FLAGS.batch_num*3,0,0],[FLAGS.batch_num,-1,-1]);
   return S1,S2,S3,S4;
 
-def core(S1,S3,S4,FLAGS):
-  S=tf.concat([S1,S3,S4],0);
+def core1(S,FLAGS):
   M=tf.unstack(S,FLAGS.No,1);
   # Self-Dynamics MLP
   SD_in=tf.reshape(S,[-1,FLAGS.Ds]);
-  with tf.variable_scope('self-dynamics'):
+  with tf.variable_scope('self-dynamics1'):
     w1 = tf.get_variable('w1',shape=[FLAGS.Ds, 64]);
     b1 = tf.get_variable('b1',shape=[64]);
     h1 = tf.nn.relu(tf.matmul(SD_in, w1) + b1);
@@ -133,7 +132,7 @@ def core(S1,S3,S4,FLAGS):
     col_idx=int(i%FLAGS.No);
     rel_in[i]=tf.concat([M[row_idx],M[col_idx]],1);
   rel_in=tf.concat(list(rel_in),0);
-  with tf.variable_scope('Relation'):
+  with tf.variable_scope('Relation1'):
     w1 = tf.get_variable('w1',shape=[FLAGS.Ds*2, 64]);
     b1 = tf.get_variable('b1',shape=[64]);
     h1 = tf.nn.relu(tf.matmul(rel_in, w1) + b1);
@@ -147,7 +146,7 @@ def core(S1,S3,S4,FLAGS):
   for i in range(rel_num):
     row_idx=int(i/FLAGS.No);
     col_idx=int(i%FLAGS.No);
-    M_rel[i]=tf.slice(h3,[(FLAGS.batch_num*3)*i,0],[(FLAGS.batch_num*3),-1]);
+    M_rel[i]=tf.slice(h3,[(FLAGS.batch_num)*i,0],[(FLAGS.batch_num),-1]);
   M_rel2=np.zeros(FLAGS.No,dtype=object);
   for i in range(FLAGS.No):
     for j in range(FLAGS.No-1):
@@ -157,7 +156,7 @@ def core(S1,S3,S4,FLAGS):
   M_update=M_self+M_rel2;
   # Affector MLP
   aff_in=tf.reshape(M_update,[-1,64]);
-  with tf.variable_scope('Affector'):
+  with tf.variable_scope('Affector1'):
     w1 = tf.get_variable('w1',shape=[64, 64]);
     b1 = tf.get_variable('b1',shape=[64]);
     h1 = tf.nn.relu(tf.matmul(aff_in, w1) + b1);
@@ -171,7 +170,7 @@ def core(S1,S3,S4,FLAGS):
   # Output MLP
   M_i_M_affect = tf.concat([S,M_update],2);
   out_in=tf.reshape(M_i_M_affect,[-1,FLAGS.Ds+64]);
-  with tf.variable_scope('Output'):
+  with tf.variable_scope('Output1'):
     w1 = tf.get_variable('w1',shape=[FLAGS.Ds+64, 64]);
     b1 = tf.get_variable('b1',shape=[64]);
     h1 = tf.nn.relu(tf.matmul(out_in, w1) + b1);
@@ -179,13 +178,148 @@ def core(S1,S3,S4,FLAGS):
     b2 = tf.get_variable('b2',shape=[64]);
     h2 = tf.matmul(h1, w2) + b2;
   h2_out = tf.reshape(h2,[-1,FLAGS.No,64]);
-  Sc1=tf.slice(h2_out,[0,0,0],[FLAGS.batch_num,-1,-1]);
-  Sc3=tf.slice(h2_out,[FLAGS.batch_num,0,0],[FLAGS.batch_num,-1,-1]);
-  Sc4=tf.slice(h2_out,[FLAGS.batch_num*2,0,0],[FLAGS.batch_num,-1,-1]);
-  return Sc1,Sc3,Sc4;
+  return h2_out;
+
+def core2(S,FLAGS):
+  M=tf.unstack(S,FLAGS.No,1);
+  # Self-Dynamics MLP
+  SD_in=tf.reshape(S,[-1,FLAGS.Ds]);
+  with tf.variable_scope('self-dynamics2'):
+    w1 = tf.get_variable('w1',shape=[FLAGS.Ds, 64]);
+    b1 = tf.get_variable('b1',shape=[64]);
+    h1 = tf.nn.relu(tf.matmul(SD_in, w1) + b1);
+    w2 = tf.get_variable('w2',shape=[64, 64]);
+    b2 = tf.get_variable('b2',shape=[64]);
+    h2 = tf.matmul(h1, w2) + b2;
+  M_self = tf.reshape(h2,[-1,FLAGS.No,64]);
+  # Relation MLP
+  rel_num=int((FLAGS.No)*(FLAGS.No+1)/2);
+  rel_in=np.zeros(rel_num,dtype=object);
+  for i in range(rel_num):
+    row_idx=int(i/FLAGS.No);
+    col_idx=int(i%FLAGS.No);
+    rel_in[i]=tf.concat([M[row_idx],M[col_idx]],1);
+  rel_in=tf.concat(list(rel_in),0);
+  with tf.variable_scope('Relation2'):
+    w1 = tf.get_variable('w1',shape=[FLAGS.Ds*2, 64]);
+    b1 = tf.get_variable('b1',shape=[64]);
+    h1 = tf.nn.relu(tf.matmul(rel_in, w1) + b1);
+    w2 = tf.get_variable('w2',shape=[64, 64]);
+    b2 = tf.get_variable('b2',shape=[64]);
+    h2 = tf.nn.relu(tf.matmul(h1, w2) + b2);
+    w3 = tf.get_variable('w3',shape=[64, 64]);
+    b3 = tf.get_variable('b3',shape=[64]);
+    h3 = tf.matmul(h2, w3) + b3;
+  M_rel=np.zeros(rel_num,dtype=object);
+  for i in range(rel_num):
+    row_idx=int(i/FLAGS.No);
+    col_idx=int(i%FLAGS.No);
+    M_rel[i]=tf.slice(h3,[(FLAGS.batch_num)*i,0],[(FLAGS.batch_num),-1]);
+  M_rel2=np.zeros(FLAGS.No,dtype=object);
+  for i in range(FLAGS.No):
+    for j in range(FLAGS.No-1):
+      M_rel2[i]+=M_rel[i*(FLAGS.No-1)+j];
+  M_rel2=tf.stack(list(M_rel2),1);
+  # M_update
+  M_update=M_self+M_rel2;
+  # Affector MLP
+  aff_in=tf.reshape(M_update,[-1,64]);
+  with tf.variable_scope('Affector2'):
+    w1 = tf.get_variable('w1',shape=[64, 64]);
+    b1 = tf.get_variable('b1',shape=[64]);
+    h1 = tf.nn.relu(tf.matmul(aff_in, w1) + b1);
+    w2 = tf.get_variable('w2',shape=[64, 64]);
+    b2 = tf.get_variable('b2',shape=[64]);
+    h2 = tf.nn.relu(tf.matmul(h1, w2) + b2);
+    w3 = tf.get_variable('w3',shape=[64, 64]);
+    b3 = tf.get_variable('b3',shape=[64]);
+    h3 = tf.matmul(h2, w3) + b3;
+  M_affect = tf.reshape(h3,[-1,FLAGS.No,64]);
+  # Output MLP
+  M_i_M_affect = tf.concat([S,M_update],2);
+  out_in=tf.reshape(M_i_M_affect,[-1,FLAGS.Ds+64]);
+  with tf.variable_scope('Output2'):
+    w1 = tf.get_variable('w1',shape=[FLAGS.Ds+64, 64]);
+    b1 = tf.get_variable('b1',shape=[64]);
+    h1 = tf.nn.relu(tf.matmul(out_in, w1) + b1);
+    w2 = tf.get_variable('w2',shape=[64, 64]);
+    b2 = tf.get_variable('b2',shape=[64]);
+    h2 = tf.matmul(h1, w2) + b2;
+  h2_out = tf.reshape(h2,[-1,FLAGS.No,64]);
+  return h2_out;
+
+def core4(S,FLAGS):
+  M=tf.unstack(S,FLAGS.No,1);
+  # Self-Dynamics MLP
+  SD_in=tf.reshape(S,[-1,FLAGS.Ds]);
+  with tf.variable_scope('self-dynamics4'):
+    w1 = tf.get_variable('w1',shape=[FLAGS.Ds, 64]);
+    b1 = tf.get_variable('b1',shape=[64]);
+    h1 = tf.nn.relu(tf.matmul(SD_in, w1) + b1);
+    w2 = tf.get_variable('w2',shape=[64, 64]);
+    b2 = tf.get_variable('b2',shape=[64]);
+    h2 = tf.matmul(h1, w2) + b2;
+  M_self = tf.reshape(h2,[-1,FLAGS.No,64]);
+  # Relation MLP
+  rel_num=int((FLAGS.No)*(FLAGS.No+1)/2);
+  rel_in=np.zeros(rel_num,dtype=object);
+  for i in range(rel_num):
+    row_idx=int(i/FLAGS.No);
+    col_idx=int(i%FLAGS.No);
+    rel_in[i]=tf.concat([M[row_idx],M[col_idx]],1);
+  rel_in=tf.concat(list(rel_in),0);
+  with tf.variable_scope('Relation4'):
+    w1 = tf.get_variable('w1',shape=[FLAGS.Ds*2, 64]);
+    b1 = tf.get_variable('b1',shape=[64]);
+    h1 = tf.nn.relu(tf.matmul(rel_in, w1) + b1);
+    w2 = tf.get_variable('w2',shape=[64, 64]);
+    b2 = tf.get_variable('b2',shape=[64]);
+    h2 = tf.nn.relu(tf.matmul(h1, w2) + b2);
+    w3 = tf.get_variable('w3',shape=[64, 64]);
+    b3 = tf.get_variable('b3',shape=[64]);
+    h3 = tf.matmul(h2, w3) + b3;
+  M_rel=np.zeros(rel_num,dtype=object);
+  for i in range(rel_num):
+    row_idx=int(i/FLAGS.No);
+    col_idx=int(i%FLAGS.No);
+    M_rel[i]=tf.slice(h3,[(FLAGS.batch_num)*i,0],[(FLAGS.batch_num),-1]);
+  M_rel2=np.zeros(FLAGS.No,dtype=object);
+  for i in range(FLAGS.No):
+    for j in range(FLAGS.No-1):
+      M_rel2[i]+=M_rel[i*(FLAGS.No-1)+j];
+  M_rel2=tf.stack(list(M_rel2),1);
+  # M_update
+  M_update=M_self+M_rel2;
+  # Affector MLP
+  aff_in=tf.reshape(M_update,[-1,64]);
+  with tf.variable_scope('Affector4'):
+    w1 = tf.get_variable('w1',shape=[64, 64]);
+    b1 = tf.get_variable('b1',shape=[64]);
+    h1 = tf.nn.relu(tf.matmul(aff_in, w1) + b1);
+    w2 = tf.get_variable('w2',shape=[64, 64]);
+    b2 = tf.get_variable('b2',shape=[64]);
+    h2 = tf.nn.relu(tf.matmul(h1, w2) + b2);
+    w3 = tf.get_variable('w3',shape=[64, 64]);
+    b3 = tf.get_variable('b3',shape=[64]);
+    h3 = tf.matmul(h2, w3) + b3;
+  M_affect = tf.reshape(h3,[-1,FLAGS.No,64]);
+  # Output MLP
+  M_i_M_affect = tf.concat([S,M_update],2);
+  out_in=tf.reshape(M_i_M_affect,[-1,FLAGS.Ds+64]);
+  with tf.variable_scope('Output4'):
+    w1 = tf.get_variable('w1',shape=[FLAGS.Ds+64, 64]);
+    b1 = tf.get_variable('b1',shape=[64]);
+    h1 = tf.nn.relu(tf.matmul(out_in, w1) + b1);
+    w2 = tf.get_variable('w2',shape=[64, 64]);
+    b2 = tf.get_variable('b2',shape=[64]);
+    h2 = tf.matmul(h1, w2) + b2;
+  h2_out = tf.reshape(h2,[-1,FLAGS.No,64]);
+  return h2_out;
 
 def DP(S1,S2,S3,S4,FLAGS):
-  Sc1,Sc3,Sc4=core(S1,S3,S4,FLAGS);
+  Sc1=core4(S1,FLAGS);
+  Sc3=core2(S3,FLAGS);
+  Sc4=core1(S4,FLAGS);
   # Aggregator MLP
   S=tf.concat([Sc1,Sc3,Sc4],2);
   S=tf.reshape(S,[-1,192]);

@@ -34,7 +34,7 @@ def init(frame_num,n_body,fea_num,orbit):
     data[0][0][1:5]=0.0;
     for i in range(1,n_body):
       data[0][i][0]=np.random.rand()*8.98+0.02;
-      distance=np.random.rand()*90.0+10.0;
+      distance=np.random.rand()*50.0+50.0;
       theta=np.random.rand()*360;
       theta_rad = pi/2 - radians(theta);    
       data[0][i][1]=distance*cos(theta_rad);
@@ -92,7 +92,8 @@ def make_video(xy,filename):
   writer = FFMpegWriter(fps=15, metadata=metadata)
   #fig = plt.figure()
   mydpi=100;
-  fig = plt.figure(figsize=(32/mydpi,32/mydpi))
+  fig = plt.figure(figsize=(128/mydpi,128/mydpi))
+  #fig = plt.figure(figsize=(32/mydpi,32/mydpi))
   plt.xlim(-200, 200)
   plt.ylim(-200, 200)
   fig_num=len(xy);
@@ -102,7 +103,7 @@ def make_video(xy,filename):
     for i in range(len(xy)):
       for j in range(len(xy[0])):
         #plt.plot(xy[i,j,1],xy[i,j,0],color[j%len(color)]);
-        plt.scatter(xy[i,j,1],xy[i,j,0],c=color[j%len(color)],s=2);
+        plt.scatter(xy[i,j,1],xy[i,j,0],c=color[j%len(color)],s=5);
       writer.grab_frame();
 
 def make_image(xy,img_folder,prefix):
@@ -116,7 +117,7 @@ def make_image(xy,img_folder,prefix):
     plt.ylim(-200, 200)
     color=['r','b','g','k','y','m','c'];
     for j in range(len(xy[0])):
-      plt.scatter(xy[i,j,1],xy[i,j,0],c=color[j%len(color)],s=2);
+      plt.scatter(xy[i,j,1],xy[i,j,0],c=color[j%len(color)],s=0.5);
     fig.savefig(img_folder+prefix+"_"+str(i)+".png",dpi=mydpi);
 
 def make_image2(xy,img_folder,prefix):

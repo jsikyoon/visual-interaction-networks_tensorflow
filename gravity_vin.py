@@ -78,7 +78,6 @@ def train():
   for i in range(1,4):
     ve_loss+=tf.reduce_mean(tf.reduce_mean(tf.square(S_est[i]-S_label_part[i]),[1,2]));
   ve_loss=ve_loss/4;
-  #total_loss=ve_loss;
   total_loss=mse+ve_loss;
   optimizer = tf.train.AdamOptimizer(0.0005);
   trainer=optimizer.minimize(total_loss);
@@ -106,7 +105,8 @@ def train():
     f=open(data_folder+"train/"+str(i)+".csv","r");
     total_data[i]=[line[:-1].split(",") for line in f.readlines()];
   total_data=np.reshape(total_data,[FLAGS.set_num,frame_num,FLAGS.No,5]); 
-  
+
+  """
   # Normalization
   position_list=np.sort(np.reshape(total_data[:,:,:,1:3],[1,FLAGS.set_num*frame_num*FLAGS.No*2])[0]);
   position_median=position_list[int(len(position_list)*0.5)];
@@ -119,6 +119,8 @@ def train():
   
   total_data[:,:,:,1:3]=(total_data[:,:,:,1:3]-position_median)*(2/(position_max-position_min));
   total_data[:,:,:,3:5]=(total_data[:,:,:,3:5]-velocity_median)*(2/(velocity_max-velocity_min));
+  """
+  total_data[:,:,:,3:5]=0;
 
   # reshape img and data
   input_img=np.zeros((FLAGS.set_num*(frame_num-14+1),6,FLAGS.height,FLAGS.weight,FLAGS.col_dim),dtype=float);
@@ -206,12 +208,19 @@ def train():
   xy_estimated=np.zeros(((frame_num-14+1-4+1),No,2),dtype=float);
   
   # Rollout 
+  posi=sess.run(label_pred,feed_dict={F:input_img[150:154],label:output_label[150:154],S_label:output_S_label[150:154],x_cor:xcor,y_cor:ycor,df:1.0})[0];
   #posi=sess.run(label_pred,feed_dict={F:input_img[0:4],label:output_label[0:4],S_label:output_S_label[0:4],x_cor:xcor,y_cor:ycor,df:1.0})[0];
+  xy_estimated=posi[:,:,:2];
   #xy_estimated=(posi[:,:,:2]*(position_max-position_min)/2+position_median);
+ 
+  """ 
+  # 1 frame prediction
   for i in range(frame_num-14+1-4+1):
     posi=sess.run(label_pred,feed_dict={F:input_img[i:i+4],label:output_label[i:i+4],S_label:output_S_label[i:i+4],x_cor:xcor,y_cor:ycor,df:1.0})[0];
-    xy_estimated[i]=(posi[0,:,:2]*(position_max-position_min)/2+position_median);
-  
+    xy_estimated[i]=posi[0,:,:2];
+    #xy_estimated[i]=(posi[0,:,:2]*(position_max-position_min)/2+position_median);
+  """
+
   # Saving
   print("Video Recording");
   make_video(xy_origin,"true"+str(time.time())+".mp4");
@@ -239,7 +248,7 @@ if __name__ == '__main__':
                       help='Summaries log directry')
   parser.add_argument('--batch_num', type=int, default=4,
                       help='The number of data on each mini batch')
-  parser.add_argument('--max_epoches', type=int, default=500,
+  parser.add_argument('--max_epoches', type=int, default=800,
                       help='Maximum limitation of epoches')
   parser.add_argument('--Ds', type=int, default=64,
                       help='The State Code Dimension')
