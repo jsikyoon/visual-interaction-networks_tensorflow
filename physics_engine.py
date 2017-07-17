@@ -17,6 +17,7 @@ from constants import No
 from constants import img_folder
 from constants import data_folder
 from constants import frame_num
+from constants import frame_step
 from constants import set_num
 
 # 7 features on the state [mass,x,y,x_vel,y_vel]
@@ -80,9 +81,10 @@ def calc(cur_state,n_body):
 
 def gen(n_body,orbit):
   # initialization on just first state
-  data=init(frame_num,n_body,fea_num,orbit);
-  for i in range(1,frame_num):
+  data=init(frame_num*frame_step,n_body,fea_num,orbit);
+  for i in range(1,frame_num*frame_step):
     data[i]=calc(data[i-1],n_body);
+  data=data[0:frame_num*frame_step:frame_step];
   return data;
 
 def make_video(xy,filename):
@@ -92,8 +94,8 @@ def make_video(xy,filename):
   writer = FFMpegWriter(fps=15, metadata=metadata)
   #fig = plt.figure()
   mydpi=100;
-  fig = plt.figure(figsize=(128/mydpi,128/mydpi))
-  #fig = plt.figure(figsize=(32/mydpi,32/mydpi))
+  #fig = plt.figure(figsize=(128/mydpi,128/mydpi))
+  fig = plt.figure(figsize=(32/mydpi,32/mydpi))
   plt.xlim(-200, 200)
   plt.ylim(-200, 200)
   fig_num=len(xy);
@@ -103,7 +105,8 @@ def make_video(xy,filename):
     for i in range(len(xy)):
       for j in range(len(xy[0])):
         #plt.plot(xy[i,j,1],xy[i,j,0],color[j%len(color)]);
-        plt.scatter(xy[i,j,1],xy[i,j,0],c=color[j%len(color)],s=5);
+        #plt.scatter(xy[i,j,1],xy[i,j,0],c=color[j%len(color)],s=5);
+        plt.scatter(xy[i,j,1],xy[i,j,0],c=color[j%len(color)],s=0.5);
       writer.grab_frame();
 
 def make_image(xy,img_folder,prefix):
