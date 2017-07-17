@@ -185,4 +185,4 @@ if __name__=='__main__':
   xy=data[:,:,1:3];
   make_image(xy,img_folder+"test/",str(0),bg_img);
   make_file(data,data_folder+"test/",str(0));
-  #make_video(xy,"test.mp4");
+  make_video(xy,"test.mp4");
