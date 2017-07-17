@@ -16,3 +16,34 @@ https://deepmind.com/blog/neural-approach-relational-reasoning/
 N-objects Gravity Simulations
 --------------------------
 
+For changing configure values, please check constants script.
+
+`
+cat constracts.py
+`
+
+For generating images and data,
+
+`
+python physical_engines.py
+`
+
+For modeling Visual Interaction Networks
+
+`
+python gravity_vin.py
+`
+### Data
+The Data are gathered from my own implemented physics engine, which is same of interaction network git repo.
+https://github.com/jaesik817/Interaction-networks_tensorflow
+
+One different thing from IN physics engines is each frame is gathered per "frame_step", because 0.0001 secs frame cannot be recognized in 32 x 32 images.
+
+### Settings
+Settings are written in constants.py and gravity_vin.py. 
+The number of objects, each simulations, rollout frames and simulation sets are 3, 50, 100 and 10. 
+In physical_engines code, every frames are saved as image and coded data, and those things are used in gravity_vin script.
+Each image has background ones from CIFAR 10 training data set as the paper.
+
+### Results
+In Progress....

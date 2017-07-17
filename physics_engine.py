@@ -19,6 +19,7 @@ from constants import data_folder
 from constants import frame_num
 from constants import frame_step
 from constants import set_num
+import cifar10
 
 # 7 features on the state [mass,x,y,x_vel,y_vel]
 fea_num=5;
@@ -105,11 +106,10 @@ def make_video(xy,filename):
     for i in range(len(xy)):
       for j in range(len(xy[0])):
         #plt.plot(xy[i,j,1],xy[i,j,0],color[j%len(color)]);
-        #plt.scatter(xy[i,j,1],xy[i,j,0],c=color[j%len(color)],s=5);
         plt.scatter(xy[i,j,1],xy[i,j,0],c=color[j%len(color)],s=0.5);
       writer.grab_frame();
 
-def make_image(xy,img_folder,prefix):
+def make_image(xy,img_folder,prefix,bg_img):
   if not os.path.exists(img_folder):
     os.makedirs(img_folder);
   fig_num=len(xy);
@@ -118,6 +118,8 @@ def make_image(xy,img_folder,prefix):
     fig = plt.figure(figsize=(32/mydpi,32/mydpi))
     plt.xlim(-200, 200)
     plt.ylim(-200, 200)
+    plt.axis('off');
+    plt.imshow(bg_img,extent=[-200,200,-200,200]);
     color=['r','b','g','k','y','m','c'];
     for j in range(len(xy[0])):
       plt.scatter(xy[i,j,1],xy[i,j,0],c=color[j%len(color)],s=0.5);
@@ -129,12 +131,15 @@ def make_image2(xy,img_folder,prefix):
   fig_num=len(xy);
   mydpi=100;
   for i in range(fig_num):
-    fig = plt.figure(figsize=(128/mydpi,128/mydpi))
+    fig = plt.figure(figsize=(32/mydpi,32/mydpi))
+    #fig = plt.figure(figsize=(128/mydpi,128/mydpi))
     plt.xlim(-200, 200)
     plt.ylim(-200, 200)
+    plt.axis('off');
     color=['r','b','g','k','y','m','c'];
     for j in range(len(xy[0])):
-      plt.scatter(xy[i,j,1],xy[i,j,0],c=color[j%len(color)],s=5);
+      plt.scatter(xy[i,j,1],xy[i,j,0],c=color[j%len(color)],s=0.5);
+      #plt.scatter(xy[i,j,1],xy[i,j,0],c=color[j%len(color)],s=5);
     fig.savefig(img_folder+prefix+"_"+str(i)+".png",dpi=mydpi);
 
 def make_file(data,data_folder,prefix):
@@ -152,16 +157,32 @@ def gen_make(n_body,orbit,img_folder,data_folder,prefix):
   make_file(data,data_folder,str(prefix));
   
 if __name__=='__main__':
+  # Get CIFAR 10 dataset
+  cifar10.maybe_download_and_extract();
+  cifar_data_dir="/tmp/cifar10_data/cifar-10-batches-bin/"
+  tr_label_cifar10=np.zeros((50000,1),dtype=float);
+  for i in range(1,6):
+    file_name=os.path.join(cifar_data_dir,"data_batch_"+str(i)+".bin");
+    f = open(file_name,"rb");
+    data=np.reshape(bytearray(f.read()),[10000,3073]);
+    if(i==1):
+      tr_data_cifar10=data[:,1:]/255.0;
+    else:
+      tr_data_cifar10=np.append(tr_data_cifar10,data[:,1:]/255.0,axis=0);
+    for j in range(len(data)):
+      tr_label_cifar10[(i-1)*10000+j]=data[j,0];
+  rand_idx=range(50000);np.random.shuffle(rand_idx);
   # Making Training Data
   for i in range(set_num):
+    bg_img=np.reshape(tr_data_cifar10[rand_idx[i]],[32,32,3]);
     data=gen(No,True);
     xy=data[:,:,1:3];
-    make_image(xy,img_folder+"train/",str(i));
+    make_image(xy,img_folder+"train/",str(i),bg_img);
     make_file(data,data_folder+"train/",str(i));
   # Making Test Data
+  bg_img=np.reshape(tr_data_cifar10[rand_idx[i]],[32,32,3]);
   data=gen(No,True);
   xy=data[:,:,1:3];
-  make_image(xy,img_folder+"test/",str(0));
+  make_image(xy,img_folder+"test/",str(0),bg_img);
   make_file(data,data_folder+"test/",str(0));
-  
   #make_video(xy,"test.mp4");
