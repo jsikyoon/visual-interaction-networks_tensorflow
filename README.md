@@ -11,7 +11,7 @@ https://arxiv.org/abs/1706.01433
 
 https://deepmind.com/blog/neural-approach-relational-reasoning/
 
-![alt tag](https://github.com/jaesik817/pathnet/blob/master/figures/vin_fig1.png)
+![alt tag](https://github.com/jaesik817/visual-interaction-networks_tensorflow/blob/master/figures/vin_fig1.png)
 
 N-objects Gravity Simulations
 --------------------------
