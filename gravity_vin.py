@@ -193,10 +193,10 @@ def train():
   ts_img=np.zeros((1,int(frame_num),FLAGS.height,FLAGS.weight,FLAGS.col_dim),dtype=float);
   for i in range(1):
     for j in range(int(frame_num)):
-      ts_img[i,j]=mpimg.imread(img_folder+"train/"+str(i)+"_"+str(j)+'.png')[:,:,:FLAGS.col_dim];
+      ts_img[i,j]=mpimg.imread(img_folder+"test/"+str(i)+"_"+str(j)+'.png')[:,:,:FLAGS.col_dim];
   ts_data=np.zeros((1,int(frame_num),FLAGS.No*5),dtype=float);
   for i in range(1):
-    f=open(data_folder+"train/"+str(i)+".csv","r");
+    f=open(data_folder+"test/"+str(i)+".csv","r");
     ts_data[i]=[line[:-1].split(",") for line in f.readlines()];
   
   # reshape img and data
@@ -226,9 +226,9 @@ def train():
   """
 
   # Saving
-  print("Video Recording");
-  make_video(xy_origin,"true"+str(time.time())+".mp4");
-  make_video(xy_estimated,"modeling"+str(time.time())+".mp4");
+  #print("Video Recording");
+  #make_video(xy_origin,"true"+str(time.time())+".mp4");
+  #make_video(xy_estimated,"modeling"+str(time.time())+".mp4");
   print("Image Making");
   make_image2(xy_origin,img_folder+"results/","true");
   make_image2(xy_estimated,img_folder+"results/","modeling");
