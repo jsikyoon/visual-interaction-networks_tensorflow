@@ -60,7 +60,10 @@ def norm(x):
 
 def get_f(reciever,sender):
   diff=sender[1:3]-reciever[1:3];
-  return G*reciever[0]*sender[0]/(norm(diff)**3)*diff;
+  distance=norm(diff);
+  if(distance<5):
+    distance=5;
+  return G*reciever[0]*sender[0]/(distance**3)*diff;
  
 def calc(cur_state,n_body):
   next_state=np.zeros((n_body,fea_num),dtype=float);
@@ -175,6 +178,7 @@ if __name__=='__main__':
   # Making Training Data
   for i in range(set_num):
     bg_img=np.reshape(tr_data_cifar10[rand_idx[i]],[32,32,3]);
+    #bg_img=np.zeros((32,32,3));
     data=gen(No,True);
     xy=data[:,:,1:3];
     make_image(xy,img_folder+"train/",str(i),bg_img);
@@ -182,6 +186,7 @@ if __name__=='__main__':
   # Making Test Data
   bg_img=np.reshape(tr_data_cifar10[rand_idx[i]],[32,32,3]);
   data=gen(No,True);
+  #bg_img=np.zeros((32,32,3));
   xy=data[:,:,1:3];
   make_image(xy,img_folder+"test/",str(0),bg_img);
   make_file(data,data_folder+"test/",str(0));

@@ -116,7 +116,11 @@ def train():
   velocity_median=velocity_list[int(len(velocity_list)*0.5)];
   velocity_min=velocity_list[int(len(velocity_list)*0)];
   velocity_max=velocity_list[int(len(velocity_list)*1)-1];
-  
+
+  #print(position_median);  
+  #print(position_max);  
+  #print(position_min);  
+  #exit(1);
   total_data[:,:,:,1:3]=(total_data[:,:,:,1:3]-position_median)*(2/(position_max-position_min));
   total_data[:,:,:,3:5]=(total_data[:,:,:,3:5]-velocity_median)*(2/(velocity_max-velocity_min));
   #total_data[:,:,:,3:5]=0;
@@ -155,7 +159,6 @@ def train():
   beta = int(FLAGS.max_epoches*0.05);
   # training
   for i in range(FLAGS.max_epoches):
-    #df_value=i/FLAGS.max_epoches;
     df_value=1-math.exp(-1*i/beta);
     #df_value=0;
     tr_loss=0;

@@ -42,8 +42,9 @@ One different thing from IN physics engines is each frame is gathered per "frame
 ### Settings
 Settings are written in constants.py and gravity_vin.py. 
 The number of objects, each simulations, rollout frames and simulation sets are 3, 50, 100 and 10. 
+The training max epoches are 1000.
 In physical_engines code, every frames are saved as image and coded data, and those things are used in gravity_vin script.
 Each image has background ones from CIFAR 10 training data set as the paper.
 
 ### Results
-In Progress....
+The video frame is also 32x32, thus that cannot be easily recognized, however based on a big object, orbit system working is checked in the video.
