@@ -49,8 +49,8 @@ Each image has background ones from CIFAR 10 training data set as the paper.
 ### Results
 The video frame is also 32x32, thus that cannot be easily recognized, however based on a big object, orbit system working is checked in the video.
 
-True 
+True :
 ![alt tag](https://github.com/jaesik817/visual-interaction-networks_tensorflow/blob/master/figures/true.gif)
 
-Modeling
+Modeling :
 ![alt tag](https://github.com/jaesik817/visual-interaction-networks_tensorflow/blob/master/figures/modeling.gif)
