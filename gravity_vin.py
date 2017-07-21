@@ -31,9 +31,9 @@ def variable_summaries(var,idx):
 
 def rollout_DP(prev_out,cur_in):
   # rolling DP to roll_num
-  S1,S2,S3,S4=tf.unstack(prev_out,4,1);
+  S1,S2,S3,S4=tf.unstack(prev_out,4,0);
   S_pred=DP(S1,S2,S3,S4,FLAGS);
-  res=tf.stack([S2,S3,S4,S_pred],1);
+  res=tf.stack([S2,S3,S4,S_pred],0);
   return res;
 
 def train():
@@ -58,10 +58,10 @@ def train():
 
   # Rolling Dynamic Predictor
   roll_in=tf.identity(tf.Variable(tf.zeros([roll_num]),dtype=tf.float32));
-  roll_out=tf.scan(rollout_DP,roll_in,initializer=tf.stack([S1,S2,S3,S4],1));
+  roll_out=tf.scan(rollout_DP,roll_in,initializer=tf.stack([S1,S2,S3,S4],0));
   S_pred=tf.unstack(roll_out,4,1)[-1];
   S_pred=tf.reshape(tf.stack(tf.unstack(S_pred,FLAGS.batch_num,1),0),[-1,FLAGS.No,FLAGS.Ds]);
-
+  
   # State Decoder
   S=tf.concat([S1,S2,S3,S4,S_pred],0);
   out_sd=SD(S,FLAGS);
@@ -72,9 +72,10 @@ def train():
   label_pred8=tf.unstack(label_pred,roll_num,1)[:8];
   
   # loss and optimizer
-  mse=tf.reduce_mean(tf.reduce_mean(tf.square(label_pred8[0]-label_part[0]),[1,2]));
+  mse=df*tf.reduce_mean(tf.reduce_mean(tf.square(label_pred8[0]-label_part[0]),[1,2]));
   for i in range(1,8):
-    mse+=(df**i)*tf.reduce_mean(tf.reduce_mean(tf.square(label_pred8[i]-label_part[i]),[1,2]));
+    mse+=(df**(i+1))*tf.reduce_mean(tf.reduce_mean(tf.square(label_pred8[i]-label_part[i]),[1,2]));
+  mse=mse/8;
   ve_loss=tf.reduce_mean(tf.reduce_mean(tf.square(S_est[0]-S_label_part[0]),[1,2]));
   for i in range(1,4):
     ve_loss+=tf.reduce_mean(tf.reduce_mean(tf.square(S_est[i]-S_label_part[i]),[1,2]));
@@ -107,6 +108,7 @@ def train():
     total_data[i]=[line[:-1].split(",") for line in f.readlines()];
   total_data=np.reshape(total_data,[FLAGS.set_num,int(frame_num),FLAGS.No,5]); 
 
+  """
   # Normalization
   position_list=np.sort(np.reshape(total_data[:,:,:,1:3],[1,FLAGS.set_num*int(frame_num)*FLAGS.No*2])[0]);
   position_median=position_list[int(len(position_list)*0.5)];
@@ -120,10 +122,17 @@ def train():
   #print(position_median);  
   #print(position_max);  
   #print(position_min);  
+  #print(velocity_median);  
+  #print(velocity_max);  
+  #print(velocity_min);  
   #exit(1);
-  total_data[:,:,:,1:3]=(total_data[:,:,:,1:3]-position_median)*(2/(position_max-position_min));
-  total_data[:,:,:,3:5]=(total_data[:,:,:,3:5]-velocity_median)*(2/(velocity_max-velocity_min));
+  
+  #total_data[:,:,:,1:3]=(total_data[:,:,:,1:3]-position_median)*(2/(position_max-position_min));
+  #total_data[:,:,:,3:5]=(total_data[:,:,:,3:5]-velocity_median)*(2/(velocity_max-velocity_min));
+  
   #total_data[:,:,:,3:5]=0;
+  #total_data[:,:,:,1:3]=0;
+  """
 
   # reshape img and data
   input_img=np.zeros((FLAGS.set_num*(int(frame_num)-14+1),6,FLAGS.height,FLAGS.weight,FLAGS.col_dim),dtype=float);
@@ -159,19 +168,21 @@ def train():
   beta = int(FLAGS.max_epoches*0.05);
   # training
   for i in range(FLAGS.max_epoches):
-    df_value=1-math.exp(-1*i/beta);
-    #df_value=0;
+    #df_value=1-math.exp(-1*i/beta);
+    df_value=1;
     tr_loss=0;
+    tr_loss2=0;
     for j in range(int(len(tr_data)/FLAGS.batch_num)):
       batch_data=tr_data[j*FLAGS.batch_num:(j+1)*FLAGS.batch_num];
       batch_label=tr_label[j*FLAGS.batch_num:(j+1)*FLAGS.batch_num];
       batch_S_label=tr_S_label[j*FLAGS.batch_num:(j+1)*FLAGS.batch_num];
       if(j==0):
-        estimated,summary,tr_loss_part,_=sess.run([label,merged,total_loss,trainer],feed_dict={F:batch_data,label:batch_label,S_label:batch_S_label,x_cor:xcor,y_cor:ycor,df:df_value});
+        estimated,summary,tr_loss_part,tr_loss_part2,_=sess.run([label,merged,mse,ve_loss,trainer],feed_dict={F:batch_data,label:batch_label,S_label:batch_S_label,x_cor:xcor,y_cor:ycor,df:df_value});
         writer.add_summary(summary,i);
       else:
-        tr_loss_part,_=sess.run([total_loss,trainer],feed_dict={F:batch_data,label:batch_label,S_label:batch_S_label,x_cor:xcor,y_cor:ycor,df:df_value});
+        tr_loss_part,tr_loss_part2,_=sess.run([mse,ve_loss,trainer],feed_dict={F:batch_data,label:batch_label,S_label:batch_S_label,x_cor:xcor,y_cor:ycor,df:df_value});
       tr_loss+=tr_loss_part;
+      tr_loss2+=tr_loss_part2;
     tr_idx=range(len(tr_data));np.random.shuffle(tr_idx);
     tr_data=tr_data[tr_idx];
     tr_label=tr_label[tr_idx];
@@ -187,16 +198,17 @@ def train():
     val_data=val_data[val_idx];
     val_label=val_label[val_idx];
     val_S_label=val_S_label[val_idx];
-    print("Epoch "+str(i+1)+" Training total loss: "+str(tr_loss/(int(len(tr_data)/FLAGS.batch_num)))+" Validation total loss: "+str(val_loss/(j+1)));
+    #print("Epoch "+str(i+1)+" Training total loss: "+str(tr_loss/(int(len(tr_data)/FLAGS.batch_num)))+" Validation total loss: "+str(val_loss/(j+1)));
+    print("Epoch "+str(i+1)+" Training mse: "+str(tr_loss/(int(len(tr_data)/FLAGS.batch_num)))+" Training ve loss: "+str(tr_loss2/int(len(tr_data)/FLAGS.batch_num)));
   
   # Get Test Image and Data 
   ts_img=np.zeros((1,int(frame_num),FLAGS.height,FLAGS.weight,FLAGS.col_dim),dtype=float);
   for i in range(1):
     for j in range(int(frame_num)):
-      ts_img[i,j]=mpimg.imread(img_folder+"test/"+str(i)+"_"+str(j)+'.png')[:,:,:FLAGS.col_dim];
+      ts_img[i,j]=mpimg.imread(img_folder+"train/"+str(i)+"_"+str(j)+'.png')[:,:,:FLAGS.col_dim];
   ts_data=np.zeros((1,int(frame_num),FLAGS.No*5),dtype=float);
   for i in range(1):
-    f=open(data_folder+"test/"+str(i)+".csv","r");
+    f=open(data_folder+"train/"+str(i)+".csv","r");
     ts_data[i]=[line[:-1].split(",") for line in f.readlines()];
   
   # reshape img and data
@@ -210,13 +222,18 @@ def train():
       output_S_label[i*(int(frame_num)-14+1)+j]=np.reshape(ts_data[i,j+2:j+6],[4,FLAGS.No,5])[:,:,1:5];
 
   xy_origin=output_label[:(int(frame_num)-14+1-4+1),0,:,0:2];
-  xy_estimated=np.zeros(((int(frame_num)-14+1-4+1),No,2),dtype=float);
+  xy_estimated=np.zeros((roll_num,No,2),dtype=float);
  
   # Rollout 
-  #posi=sess.run(label_pred,feed_dict={F:input_img[150:154],label:output_label[150:154],S_label:output_S_label[150:154],x_cor:xcor,y_cor:ycor,df:1.0})[0];
   posi=sess.run(label_pred,feed_dict={F:input_img[0:4],label:output_label[0:4],S_label:output_S_label[0:4],x_cor:xcor,y_cor:ycor,df:1.0})[0];
+  #velo=posi[:,:,2:4]*(velocity_max-velocity_min)/2+velocity_median;
+  velo=posi[:,:,2:4];
+  xy_estimated[0]=output_S_label[3][3][:,:2]+velo[0]*0.01;
+  for i in range(1,len(posi)):
+    xy_estimated[i]=xy_estimated[i-1]+velo[i]*0.01;
   #xy_estimated=posi[:,:,:2];
-  xy_estimated=(posi[:,:,:2]*(position_max-position_min)/2+position_median);
+  #xy_estimated=(posi[:,:,:2]*(position_max-position_min)/2+position_median);
+
   """
   # 1 frame prediction
   for i in range(int(frame_num)-14+1-4+1):
@@ -256,6 +273,8 @@ if __name__ == '__main__':
                       help='Maximum limitation of epoches')
   parser.add_argument('--Ds', type=int, default=64,
                       help='The State Code Dimension')
+  parser.add_argument('--fil_num', type=int, default=128,
+                      help='The Number of filters')
 
   FLAGS, unparsed = parser.parse_known_args()
   tf.app.run(main=main, argv=[sys.argv[0]] + unparsed)

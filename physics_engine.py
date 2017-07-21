@@ -27,7 +27,7 @@ fea_num=5;
 #G = 6.67428e-11;
 G=10**5;
 # time step
-diff_t=0.001;
+diff_t=0.01;
 
 def init(frame_num,n_body,fea_num,orbit):
   data=np.zeros((frame_num,n_body,fea_num),dtype=float);
@@ -61,8 +61,8 @@ def norm(x):
 def get_f(reciever,sender):
   diff=sender[1:3]-reciever[1:3];
   distance=norm(diff);
-  if(distance<5):
-    distance=5;
+  if(distance<10):
+    distance=10;
   return G*reciever[0]*sender[0]/(distance**3)*diff;
  
 def calc(cur_state,n_body):
@@ -125,7 +125,7 @@ def make_image(xy,img_folder,prefix,bg_img):
     plt.imshow(bg_img,extent=[-200,200,-200,200]);
     color=['r','b','g','k','y','m','c'];
     for j in range(len(xy[0])):
-      plt.scatter(xy[i,j,1],xy[i,j,0],c=color[j%len(color)],s=0.5);
+      plt.scatter(xy[i,j,1],xy[i,j,0],c=color[j%len(color)],s=2);
     fig.savefig(img_folder+prefix+"_"+str(i)+".png",dpi=mydpi);
 
 def make_image2(xy,img_folder,prefix):
@@ -134,15 +134,15 @@ def make_image2(xy,img_folder,prefix):
   fig_num=len(xy);
   mydpi=100;
   for i in range(fig_num):
-    fig = plt.figure(figsize=(32/mydpi,32/mydpi))
-    #fig = plt.figure(figsize=(128/mydpi,128/mydpi))
+    #fig = plt.figure(figsize=(32/mydpi,32/mydpi))
+    fig = plt.figure(figsize=(128/mydpi,128/mydpi))
     plt.xlim(-200, 200)
     plt.ylim(-200, 200)
     plt.axis('off');
     color=['r','b','g','k','y','m','c'];
     for j in range(len(xy[0])):
-      plt.scatter(xy[i,j,1],xy[i,j,0],c=color[j%len(color)],s=0.5);
-      #plt.scatter(xy[i,j,1],xy[i,j,0],c=color[j%len(color)],s=5);
+      #plt.scatter(xy[i,j,1],xy[i,j,0],c=color[j%len(color)],s=0.5);
+      plt.scatter(xy[i,j,1],xy[i,j,0],c=color[j%len(color)],s=5);
     fig.savefig(img_folder+prefix+"_"+str(i)+".png",dpi=mydpi);
 
 def make_file(data,data_folder,prefix):
@@ -177,8 +177,8 @@ if __name__=='__main__':
   rand_idx=range(50000);np.random.shuffle(rand_idx);
   # Making Training Data
   for i in range(set_num):
-    bg_img=np.reshape(tr_data_cifar10[rand_idx[i]],[32,32,3]);
-    #bg_img=np.zeros((32,32,3));
+    #bg_img=np.reshape(tr_data_cifar10[rand_idx[i]],[32,32,3]);
+    bg_img=np.ones((32,32,3));
     data=gen(No,True);
     xy=data[:,:,1:3];
     make_image(xy,img_folder+"train/",str(i),bg_img);
