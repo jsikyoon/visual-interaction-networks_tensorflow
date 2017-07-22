@@ -37,17 +37,22 @@ python gravity_vin.py
 The Data are gathered from my own implemented physics engine, which is same of interaction network git repo.
 https://github.com/jaesik817/Interaction-networks_tensorflow
 
-One different thing from IN physics engines is each frame is gathered per "frame_step", because 0.0001 secs frame cannot be recognized in 32 x 32 images.
+One different thing from IN physics engines is time difference between frames, which was 0.0001 in IN repo and is 0.001 in this. 
+Because 0.0001 secs frame cannot be recognized in 32 x 32 images.
 
 ### Settings
 Settings are written in constants.py and gravity_vin.py. 
-The number of objects, each simulations, rollout frames and simulation sets are 3, 50, 100 and 10. 
+The number of objects, frames on each simulations, rollout frames and simulation sets are 3, 50, 50 and 10. 
 The training max epoches are 1000.
 In physical_engines code, every frames are saved as image and coded data, and those things are used in gravity_vin script.
 Each image has background ones from CIFAR 10 training data set as the paper.
 
 ### Results
-The video frame is also 32x32, thus that cannot be easily recognized, however based on a big object, orbit system working is checked in the video.
+The loss decreased as followed, which is summarized value of losses on near future 8 frames and encoding-decoding losses on input images.
+
+
+
+The quilititive results are as followed.
 
 True :
 ![alt tag](https://github.com/jaesik817/visual-interaction-networks_tensorflow/blob/master/figures/true.gif)

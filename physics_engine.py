@@ -96,7 +96,6 @@ def make_video(xy,filename):
   metadata = dict(title='Movie Test', artist='Matplotlib',
                   comment='Movie support!')
   writer = FFMpegWriter(fps=15, metadata=metadata)
-  #fig = plt.figure()
   mydpi=100;
   #fig = plt.figure(figsize=(128/mydpi,128/mydpi))
   fig = plt.figure(figsize=(32/mydpi,32/mydpi))
@@ -177,8 +176,8 @@ if __name__=='__main__':
   rand_idx=range(50000);np.random.shuffle(rand_idx);
   # Making Training Data
   for i in range(set_num):
-    #bg_img=np.reshape(tr_data_cifar10[rand_idx[i]],[32,32,3]);
-    bg_img=np.ones((32,32,3));
+    bg_img=np.reshape(tr_data_cifar10[rand_idx[i]],[32,32,3]);
+    #bg_img=np.ones((32,32,3));
     data=gen(No,True);
     xy=data[:,:,1:3];
     make_image(xy,img_folder+"train/",str(i),bg_img);
@@ -186,7 +185,7 @@ if __name__=='__main__':
   # Making Test Data
   bg_img=np.reshape(tr_data_cifar10[rand_idx[i]],[32,32,3]);
   data=gen(No,True);
-  #bg_img=np.zeros((32,32,3));
+  #bg_img=np.ones((32,32,3));
   xy=data[:,:,1:3];
   make_image(xy,img_folder+"test/",str(0),bg_img);
   make_file(data,data_folder+"test/",str(0));

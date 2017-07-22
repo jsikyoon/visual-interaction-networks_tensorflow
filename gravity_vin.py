@@ -108,32 +108,6 @@ def train():
     total_data[i]=[line[:-1].split(",") for line in f.readlines()];
   total_data=np.reshape(total_data,[FLAGS.set_num,int(frame_num),FLAGS.No,5]); 
 
-  """
-  # Normalization
-  position_list=np.sort(np.reshape(total_data[:,:,:,1:3],[1,FLAGS.set_num*int(frame_num)*FLAGS.No*2])[0]);
-  position_median=position_list[int(len(position_list)*0.5)];
-  position_min=position_list[int(len(position_list)*0)];
-  position_max=position_list[int(len(position_list)*1)-1];
-  velocity_list=np.sort(np.reshape(total_data[:,:,:,3:5],[1,FLAGS.set_num*int(frame_num)*FLAGS.No*2])[0]);
-  velocity_median=velocity_list[int(len(velocity_list)*0.5)];
-  velocity_min=velocity_list[int(len(velocity_list)*0)];
-  velocity_max=velocity_list[int(len(velocity_list)*1)-1];
-
-  #print(position_median);  
-  #print(position_max);  
-  #print(position_min);  
-  #print(velocity_median);  
-  #print(velocity_max);  
-  #print(velocity_min);  
-  #exit(1);
-  
-  #total_data[:,:,:,1:3]=(total_data[:,:,:,1:3]-position_median)*(2/(position_max-position_min));
-  #total_data[:,:,:,3:5]=(total_data[:,:,:,3:5]-velocity_median)*(2/(velocity_max-velocity_min));
-  
-  #total_data[:,:,:,3:5]=0;
-  #total_data[:,:,:,1:3]=0;
-  """
-
   # reshape img and data
   input_img=np.zeros((FLAGS.set_num*(int(frame_num)-14+1),6,FLAGS.height,FLAGS.weight,FLAGS.col_dim),dtype=float);
   output_label=np.zeros((FLAGS.set_num*(int(frame_num)-14+1),8,FLAGS.No,4),dtype=float);
@@ -187,18 +161,6 @@ def train():
     tr_data=tr_data[tr_idx];
     tr_label=tr_label[tr_idx];
     tr_S_label=tr_S_label[tr_idx];
-    val_loss=0;
-    for j in range(int(len(val_data)/FLAGS.batch_num)):
-      batch_data=val_data[j*FLAGS.batch_num:(j+1)*FLAGS.batch_num];
-      batch_label=val_label[j*FLAGS.batch_num:(j+1)*FLAGS.batch_num];
-      batch_S_label=val_S_label[j*FLAGS.batch_num:(j+1)*FLAGS.batch_num];
-      val_loss_part=sess.run(total_loss,feed_dict={F:batch_data,label:batch_label,S_label:batch_S_label,x_cor:xcor,y_cor:ycor,df:df_value});
-      val_loss+=val_loss_part;
-    val_idx=range(len(val_data));np.random.shuffle(val_idx);
-    val_data=val_data[val_idx];
-    val_label=val_label[val_idx];
-    val_S_label=val_S_label[val_idx];
-    #print("Epoch "+str(i+1)+" Training total loss: "+str(tr_loss/(int(len(tr_data)/FLAGS.batch_num)))+" Validation total loss: "+str(val_loss/(j+1)));
     print("Epoch "+str(i+1)+" Training mse: "+str(tr_loss/(int(len(tr_data)/FLAGS.batch_num)))+" Training ve loss: "+str(tr_loss2/int(len(tr_data)/FLAGS.batch_num)));
   
   # Get Test Image and Data 
@@ -226,26 +188,13 @@ def train():
  
   # Rollout 
   posi=sess.run(label_pred,feed_dict={F:input_img[0:4],label:output_label[0:4],S_label:output_S_label[0:4],x_cor:xcor,y_cor:ycor,df:1.0})[0];
-  #velo=posi[:,:,2:4]*(velocity_max-velocity_min)/2+velocity_median;
+  #xy_estimated=posi[:,:,:2];
   velo=posi[:,:,2:4];
   xy_estimated[0]=output_S_label[3][3][:,:2]+velo[0]*0.01;
   for i in range(1,len(posi)):
     xy_estimated[i]=xy_estimated[i-1]+velo[i]*0.01;
-  #xy_estimated=posi[:,:,:2];
-  #xy_estimated=(posi[:,:,:2]*(position_max-position_min)/2+position_median);
-
-  """
-  # 1 frame prediction
-  for i in range(int(frame_num)-14+1-4+1):
-    posi=sess.run(label_pred,feed_dict={F:input_img[i:i+4],label:output_label[i:i+4],S_label:output_S_label[i:i+4],x_cor:xcor,y_cor:ycor,df:1.0})[0];
-    #xy_estimated[i]=posi[0,:,:2];
-    xy_estimated[i]=(posi[0,:,:2]*(position_max-position_min)/2+position_median);
-  """
-
+  
   # Saving
-  #print("Video Recording");
-  #make_video(xy_origin,"true"+str(time.time())+".mp4");
-  #make_video(xy_estimated,"modeling"+str(time.time())+".mp4");
   print("Image Making");
   make_image2(xy_origin,img_folder+"results/","true");
   make_image2(xy_estimated,img_folder+"results/","modeling");
@@ -269,7 +218,7 @@ if __name__ == '__main__':
                       help='Summaries log directry')
   parser.add_argument('--batch_num', type=int, default=4,
                       help='The number of data on each mini batch')
-  parser.add_argument('--max_epoches', type=int, default=1000,
+  parser.add_argument('--max_epoches', type=int, default=80000,
                       help='Maximum limitation of epoches')
   parser.add_argument('--Ds', type=int, default=64,
                       help='The State Code Dimension')

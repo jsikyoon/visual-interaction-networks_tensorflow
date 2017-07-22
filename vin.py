@@ -35,12 +35,10 @@ def IPE_r1(F1F2,F2F3,F3F4,F4F5,F5F6,x_cor,y_cor,FLAGS):
   h_1_1=tf.nn.relu(conv2d(img_pair,w_1_1,1)+b_1_1);
   w_1_2,b_1_2=conv_variable([10,10,4,4]);
   h_1_2=tf.nn.relu(conv2d(h_1_1,w_1_2,1)+b_1_2);
-  #h_1_2=tf.nn.relu(conv2d(h_1_1,w_1_2,1)+b_1_2+h_1_1);
   # Second 2 layer conv (kernel size 3 and 16 channels)
   w_2_1,b_2_1=conv_variable([3,3,FLAGS.col_dim*2,16]);
   h_2_1=tf.nn.relu(conv2d(img_pair,w_2_1,1)+b_2_1);
   w_2_2,b_2_2=conv_variable([3,3,16,16]);
-  #h_2_2=tf.nn.relu(conv2d(h_2_1,w_2_2,1)+b_2_2+h_2_1);
   h_2_2=tf.nn.relu(conv2d(h_2_1,w_2_2,1)+b_2_2);
   en_pair=tf.concat([h_1_2,h_2_2],3);
   # Third 2 layer conv (kernel size 3 and 16 channels)
@@ -48,7 +46,6 @@ def IPE_r1(F1F2,F2F3,F3F4,F4F5,F5F6,x_cor,y_cor,FLAGS):
   h_3_1=tf.nn.relu(conv2d(en_pair,w_3_1,1)+b_3_1);
   w_3_2,b_3_2=conv_variable([3,3,16,16]);
   h_3_2=tf.nn.relu(conv2d(h_3_1,w_3_2,1)+b_3_2);
-  #h_3_2=tf.nn.relu(conv2d(h_3_1,w_3_2,1)+b_3_2+h_3_1);
   # Inject x and y coordinate channels
   h_3_2_x_y=tf.concat([h_3_2,x_cor,y_cor],3);
   # Fourth conv and max-pooling layers to unit height and width
@@ -78,7 +75,7 @@ def IPE_r1(F1F2,F2F3,F3F4,F4F5,F5F6,x_cor,y_cor,FLAGS):
   return pair1,pair2,pair3,pair4,pair5;
 
 def IPE_r2(F1F2,F2F3,F3F4,F4F5,F5F6,x_cor,y_cor,FLAGS):
-  fil_num=128;
+  fil_num=FLAGS.fil_num;
   img_pair=tf.concat([F1F2,F2F3,F3F4,F4F5,F5F6],0);
   h_3_2_x_y=tf.concat([img_pair,x_cor,y_cor],3);
   # Fourth conv and max-pooling layers to unit height and width
@@ -114,7 +111,8 @@ def VE(F1,F2,F3,F4,F5,F6,x_cor,y_cor,FLAGS):
   pair1,pair2,pair3,pair4,pair5=IPE_r2(F1F2,F2F3,F3F4,F4F5,F5F6,x_cor,y_cor,FLAGS);
   concated_pair=tf.concat([pair1,pair2,pair3,pair4,pair5],0);
   # shared a linear layer
-  fil_num=128;
+  fil_num=FLAGS.fil_num;
+  #fil_num=32; # For IPE_r1, 32 dimension is needed.
   w0 = tf.Variable(tf.truncated_normal([fil_num, FLAGS.No*FLAGS.Ds], stddev=0.1), dtype=tf.float32)
   b0 = tf.Variable(tf.zeros([FLAGS.No*FLAGS.Ds]), dtype=tf.float32)
   h0 = tf.matmul(concated_pair, w0) + b0
