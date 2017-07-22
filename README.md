@@ -55,7 +55,7 @@ The loss decreased as followed, which is summarized value of losses on near futu
 The quilititive results are as followed.
 
 True :
-![alt tag](https://github.com/jaesik817/visual-interaction-networks_tensorflow/blob/master/figures/true.gif)
+![alt tag](https://github.com/jaesik817/visual-interaction-networks_tensorflow/blob/master/figures/true_1.gif)
 
 Modeling :
-![alt tag](https://github.com/jaesik817/visual-interaction-networks_tensorflow/blob/master/figures/modeling.gif)
+![alt tag](https://github.com/jaesik817/visual-interaction-networks_tensorflow/blob/master/figures/modeling_1.gif)
