@@ -50,7 +50,7 @@ Each image has background ones from CIFAR 10 training data set as the paper.
 ### Results
 The loss decreased as followed, which is summarized value of losses on near future 8 frames and encoding-decoding losses on input images.
 
-![alt tag](https://github.com/jaesik817/visual-interaction-networks_tensorflow/blob/master/figures/vin_training.png)
+![alt tag](https://github.com/jaesik817/visual-interaction-networks_tensorflow/blob/master/figures/vin_training.PNG)
 
 The quilititive results are as followed.
 
