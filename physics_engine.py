@@ -173,7 +173,7 @@ if __name__=='__main__':
       tr_data_cifar10=np.append(tr_data_cifar10,data[:,1:]/255.0,axis=0);
     for j in range(len(data)):
       tr_label_cifar10[(i-1)*10000+j]=data[j,0];
-  rand_idx=range(50000);np.random.shuffle(rand_idx);
+  rand_idx=list(range(50000));np.random.shuffle(rand_idx);
   # Making Training Data
   for i in range(set_num):
     bg_img=np.reshape(tr_data_cifar10[rand_idx[i]],[32,32,3]);
