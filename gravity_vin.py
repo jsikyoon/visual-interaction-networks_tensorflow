@@ -157,7 +157,7 @@ def train():
         tr_loss_part,tr_loss_part2,_=sess.run([mse,ve_loss,trainer],feed_dict={F:batch_data,label:batch_label,S_label:batch_S_label,x_cor:xcor,y_cor:ycor,df:df_value});
       tr_loss+=tr_loss_part;
       tr_loss2+=tr_loss_part2;
-    tr_idx=range(len(tr_data));np.random.shuffle(tr_idx);
+    tr_idx=list(range(len(tr_data)));np.random.shuffle(tr_idx);
     tr_data=tr_data[tr_idx];
     tr_label=tr_label[tr_idx];
     tr_S_label=tr_S_label[tr_idx];
