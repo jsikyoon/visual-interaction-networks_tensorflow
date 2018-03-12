@@ -121,7 +121,7 @@ def train():
   # shuffle
   tr_data_num=int(len(input_img)*1);
   val_data_num=int(len(input_img)*0);
-  total_idx=range(len(input_img));np.random.shuffle(total_idx);
+  total_idx=list(range(len(input_img)));np.random.shuffle(total_idx);
   mixed_img=input_img[total_idx];mixed_label=output_label[total_idx];mixed_S_label=output_S_label[total_idx];
   tr_data=mixed_img[:tr_data_num];tr_label=mixed_label[:tr_data_num];tr_S_label=mixed_S_label[:tr_data_num];
   val_data=mixed_img[tr_data_num:(tr_data_num+val_data_num)];val_label=mixed_label[tr_data_num:(tr_data_num+val_data_num)];val_S_label=mixed_S_label[tr_data_num:(tr_data_num+val_data_num)];
@@ -157,7 +157,7 @@ def train():
         tr_loss_part,tr_loss_part2,_=sess.run([mse,ve_loss,trainer],feed_dict={F:batch_data,label:batch_label,S_label:batch_S_label,x_cor:xcor,y_cor:ycor,df:df_value});
       tr_loss+=tr_loss_part;
       tr_loss2+=tr_loss_part2;
-    tr_idx=range(len(tr_data));np.random.shuffle(tr_idx);
+    tr_idx=list(range(len(tr_data)));np.random.shuffle(tr_idx);
     tr_data=tr_data[tr_idx];
     tr_label=tr_label[tr_idx];
     tr_S_label=tr_S_label[tr_idx];
