@@ -160,7 +160,8 @@ def core_r1(S,FLAGS,idx):
     h2 = tf.matmul(h1, w2) + b2+h1;
   M_self = tf.reshape(h2,[-1,FLAGS.No,fil_num]);
   # Relation MLP
-  rel_num=int((FLAGS.No)*(FLAGS.No+1)/2);
+  #rel_num=int((FLAGS.No)*(FLAGS.No+1)/2);
+  rel_num=int((FLAGS.No)*(FLAGS.No-1));
   rel_in=np.zeros(rel_num,dtype=object);
   for i in range(rel_num):
     row_idx=int(i/(FLAGS.No-1));
